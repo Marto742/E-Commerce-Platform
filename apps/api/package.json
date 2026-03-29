@@ -11,9 +11,14 @@
     "type-check": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "clean": "rm -rf dist"
+    "clean": "rm -rf dist",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:push": "prisma db push",
+    "db:studio": "prisma studio"
   },
   "dependencies": {
+    "@prisma/client": "^7.6.0",
     "cors": "^2.8.5",
     "dotenv": "^17.3.1",
     "express": "^4.21.2",
@@ -29,6 +34,7 @@
     "@types/node": "^20.17.0",
     "@types/supertest": "^6.0.2",
     "eslint": "^8.57.1",
+    "prisma": "^7.6.0",
     "supertest": "^7.0.0",
     "tsup": "^8.3.5",
     "tsx": "^4.19.2",

@@ -7,4 +7,5 @@ export default defineConfig({
   clean: true,
   sourcemap: true,
   minify: false,
+  external: ['@prisma/client', './src/generated/prisma'],
 })

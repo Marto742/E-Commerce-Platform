@@ -22,6 +22,6 @@
     "pnpm": ">=10.0.0"
   },
   "pnpm": {
-    "onlyBuiltDependencies": ["sharp", "unrs-resolver"]
+    "onlyBuiltDependencies": ["sharp", "unrs-resolver", "@prisma/engines", "prisma"]
   }
 }
