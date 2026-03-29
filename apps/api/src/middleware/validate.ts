@@ -18,7 +18,8 @@ export function validate(schema: z.ZodType, target: ValidateTarget = 'body'): Re
       return next(result.error)
     }
     // Replace req[target] with the parsed (and potentially transformed) data
-    ;(req as unknown as Record<string, unknown>)[target] = result.data
+    const mutableReq = req as unknown as Record<string, unknown>
+    mutableReq[target] = result.data
     next()
   }
 }
