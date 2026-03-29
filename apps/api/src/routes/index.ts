@@ -1,7 +1,7 @@
 import { Router } from 'express'
 import healthRouter from './health'
 
-const router = Router()
+const router: Router = Router()
 
 // ── System ────────────────────────────────────────────────
 router.use('/health', healthRouter)

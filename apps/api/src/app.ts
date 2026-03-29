@@ -1,4 +1,4 @@
-import express from 'express'
+import express, { type Application } from 'express'
 import helmet from 'helmet'
 import cors from 'cors'
 import morgan from 'morgan'
@@ -8,7 +8,7 @@ import router from '@/routes'
 import { notFound } from '@/middleware/notFound'
 import { errorHandler } from '@/middleware/error'
 
-export function createApp() {
+export function createApp(): Application {
   const app = express()
 
   // Trust Railway/Vercel reverse proxy — required for rate limiting to work correctly

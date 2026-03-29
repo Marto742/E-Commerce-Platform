@@ -1,7 +1,7 @@
 import { Router } from 'express'
 import { sendSuccess } from '@/utils/response'
 
-const router = Router()
+const router: Router = Router()
 
 router.get('/', (_req, res) => {
   sendSuccess(res, {
