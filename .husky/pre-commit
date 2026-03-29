@@ -1,15 +1,8 @@
 #!/bin/sh
-PROJECT="$(git rev-parse --show-toplevel)/Coding Projects/E-Commerce-Platform"
-
-# Get staged files inside this project, strip the project-relative prefix
 STAGED=$(git diff --name-only --cached --diff-filter=ACMR \
-  | grep "^Coding Projects/E-Commerce-Platform/" \
-  | sed 's|^Coding Projects/E-Commerce-Platform/||' \
   | grep -E '\.(ts|tsx|js|jsx|json|css|md)$')
 
 [ -z "$STAGED" ] && exit 0
-
-cd "$PROJECT"
 
 echo "$STAGED" | tr '\n' '\0' | xargs -0 ./node_modules/.bin/prettier --check 2>&1
 if [ $? -ne 0 ]; then
