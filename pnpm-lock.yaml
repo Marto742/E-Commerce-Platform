@@ -227,18 +227,30 @@ importers:
       '@repo/eslint-config':
         specifier: workspace:^
         version: link:../eslint-config
+      '@repo/tsconfig':
+        specifier: workspace:^
+        version: link:../tsconfig
       eslint:
         specifier: ^8.57.1
         version: 8.57.1
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
 
   packages/email:
     devDependencies:
       '@repo/eslint-config':
         specifier: workspace:^
         version: link:../eslint-config
+      '@repo/tsconfig':
+        specifier: workspace:^
+        version: link:../tsconfig
       eslint:
         specifier: ^8.57.1
         version: 8.57.1
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
 
   packages/eslint-config: {}
 
@@ -249,27 +261,45 @@ importers:
       '@repo/eslint-config':
         specifier: workspace:^
         version: link:../eslint-config
+      '@repo/tsconfig':
+        specifier: workspace:^
+        version: link:../tsconfig
       eslint:
         specifier: ^8.57.1
         version: 8.57.1
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
 
   packages/utils:
     devDependencies:
       '@repo/eslint-config':
         specifier: workspace:^
         version: link:../eslint-config
+      '@repo/tsconfig':
+        specifier: workspace:^
+        version: link:../tsconfig
       eslint:
         specifier: ^8.57.1
         version: 8.57.1
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
 
   packages/validation:
     devDependencies:
       '@repo/eslint-config':
         specifier: workspace:^
         version: link:../eslint-config
+      '@repo/tsconfig':
+        specifier: workspace:^
+        version: link:../tsconfig
       eslint:
         specifier: ^8.57.1
         version: 8.57.1
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
 
 packages:
 
