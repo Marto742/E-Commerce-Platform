@@ -1,5 +1,5 @@
 import type { RequestHandler } from 'express'
-import { z } from 'zod'
+import type { z } from 'zod'
 
 type ValidateTarget = 'body' | 'params' | 'query'
 
@@ -11,10 +11,7 @@ type ValidateTarget = 'body' | 'params' | 'query'
  *   router.post('/login', validate(loginSchema), loginHandler)
  *   router.get('/:id', validate(idParamsSchema, 'params'), handler)
  */
-export function validate(
-  schema: z.ZodType,
-  target: ValidateTarget = 'body'
-): RequestHandler {
+export function validate(schema: z.ZodType, target: ValidateTarget = 'body'): RequestHandler {
   return (req, _res, next) => {
     const result = schema.safeParse(req[target])
     if (!result.success) {
