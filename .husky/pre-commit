@@ -1,0 +1,3 @@
+#!/bin/sh
+PROJECT="$(git rev-parse --show-toplevel)/Coding Projects/E-Commerce-Platform"
+cd "$PROJECT" && ./node_modules/.bin/lint-staged
