@@ -2,6 +2,7 @@ import { Router } from 'express'
 import healthRouter from './health'
 import productsRouter from '@/modules/products/products.routes'
 import categoriesRouter from '@/modules/categories/categories.routes'
+import cartRouter from '@/modules/cart/cart.routes'
 
 const router: Router = Router()
 
@@ -19,7 +20,7 @@ router.use('/products', productsRouter)
 router.use('/categories', categoriesRouter)
 
 // ── Cart & Checkout ───────────────────────────────────────
-// router.use('/cart', cartRouter)          // Phase 5
+router.use('/cart', cartRouter)
 // router.use('/checkout', checkoutRouter)  // Phase 5
 
 // ── Orders ────────────────────────────────────────────────
