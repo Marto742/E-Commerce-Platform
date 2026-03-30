@@ -3,6 +3,7 @@ import healthRouter from './health'
 import productsRouter from '@/modules/products/products.routes'
 import categoriesRouter from '@/modules/categories/categories.routes'
 import cartRouter from '@/modules/cart/cart.routes'
+import ordersRouter from '@/modules/orders/orders.routes'
 
 const router: Router = Router()
 
@@ -24,7 +25,7 @@ router.use('/cart', cartRouter)
 // router.use('/checkout', checkoutRouter)  // Phase 5
 
 // ── Orders ────────────────────────────────────────────────
-// router.use('/orders', ordersRouter)      // Phase 6
+router.use('/orders', ordersRouter)
 
 // ── Payments ──────────────────────────────────────────────
 // router.use('/payments', paymentsRouter)  // Phase 5
