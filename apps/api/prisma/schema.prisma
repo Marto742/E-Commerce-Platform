@@ -111,6 +111,7 @@ model Address {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  @@index([userId, isDefault])
   @@map("addresses")
 }
 
@@ -133,6 +134,7 @@ model Category {
 
   @@index([parentId])
   @@index([isActive])
+  @@index([isActive, parentId, sortOrder])
   @@map("categories")
 }
 
@@ -158,6 +160,9 @@ model Product {
   @@index([isActive])
   @@index([isFeatured, isActive])
   @@index([createdAt])
+  @@index([isActive, categoryId])
+  @@index([isActive, basePrice])
+  @@index([isActive, createdAt])
   @@map("products")
 }
 
@@ -192,6 +197,8 @@ model ProductVariant {
 
   @@index([productId])
   @@index([isActive])
+  @@index([productId, isActive])
+  @@index([isActive, stock])
   @@map("product_variants")
 }
 
@@ -252,6 +259,7 @@ model Order {
   @@index([status])
   @@index([userId, status])
   @@index([createdAt])
+  @@index([userId, createdAt])
   @@map("orders")
 }
 
