@@ -1,5 +1,7 @@
 import { Router } from 'express'
 import healthRouter from './health'
+import productsRouter from '@/modules/products/products.routes'
+import categoriesRouter from '@/modules/categories/categories.routes'
 
 const router: Router = Router()
 
@@ -13,8 +15,8 @@ router.use('/health', healthRouter)
 // router.use('/users', usersRouter)        // Phase 3
 
 // ── Products & Catalog ────────────────────────────────────
-// router.use('/products', productsRouter)  // Phase 4
-// router.use('/categories', categoriesRouter) // Phase 4
+router.use('/products', productsRouter)
+router.use('/categories', categoriesRouter)
 
 // ── Cart & Checkout ───────────────────────────────────────
 // router.use('/cart', cartRouter)          // Phase 5
