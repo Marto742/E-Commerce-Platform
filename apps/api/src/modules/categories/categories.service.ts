@@ -2,14 +2,32 @@ import { prisma } from '@/lib/prisma'
 import { AppError } from '@/utils/AppError'
 import type { CreateCategoryInput, UpdateCategoryInput } from '@repo/validation'
 
-export async function listCategories() {
+// Returns root categories only, with their immediate children nested.
+// Use GET /categories?flat=true for a flat list of all categories.
+export async function listCategories(flat = false) {
+  if (flat) {
+    return prisma.category.findMany({
+      where: { isActive: true },
+      orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
+      include: { _count: { select: { products: true } } },
+    })
+  }
+
   return prisma.category.findMany({
-    where: { isActive: true },
+    where: { isActive: true, parentId: null },
     orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
     include: {
       children: {
         where: { isActive: true },
         orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
+        include: {
+          children: {
+            where: { isActive: true },
+            orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
+            include: { _count: { select: { products: true } } },
+          },
+          _count: { select: { products: true } },
+        },
       },
       _count: { select: { products: true } },
     },

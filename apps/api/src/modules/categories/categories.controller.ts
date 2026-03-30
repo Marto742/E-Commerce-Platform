@@ -2,9 +2,10 @@ import type { RequestHandler } from 'express'
 import { sendSuccess, sendCreated } from '@/utils/response'
 import * as categoriesService from './categories.service'
 
-export const list: RequestHandler = async (_req, res, next) => {
+export const list: RequestHandler = async (req, res, next) => {
   try {
-    const categories = await categoriesService.listCategories()
+    const flat = req.query['flat'] === 'true'
+    const categories = await categoriesService.listCategories(flat)
     sendSuccess(res, categories)
   } catch (err) {
     next(err)
