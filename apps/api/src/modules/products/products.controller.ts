@@ -98,3 +98,29 @@ export const removeVariant: RequestHandler = async (req, res, next) => {
     next(err)
   }
 }
+
+export const getVariant: RequestHandler = async (req, res, next) => {
+  try {
+    const variant = await productsService.getVariantById(
+      req.params['id'] as string,
+      req.params['variantId'] as string
+    )
+    sendSuccess(res, variant)
+  } catch (err) {
+    next(err)
+  }
+}
+
+export const adjustStock: RequestHandler = async (req, res, next) => {
+  try {
+    const variant = await productsService.adjustStock(
+      req.params['id'] as string,
+      req.params['variantId'] as string,
+      req.body.operation,
+      req.body.quantity
+    )
+    sendSuccess(res, variant)
+  } catch (err) {
+    next(err)
+  }
+}

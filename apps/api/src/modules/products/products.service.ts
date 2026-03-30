@@ -132,6 +132,43 @@ export async function listVariants(productId: string) {
   })
 }
 
+export async function getVariantById(productId: string, variantId: string) {
+  const variant = await prisma.productVariant.findFirst({
+    where: { id: variantId, productId },
+  })
+  if (!variant) throw AppError.notFound('Variant not found')
+  return variant
+}
+
+export type StockOperation = 'set' | 'add' | 'subtract'
+
+export async function adjustStock(
+  productId: string,
+  variantId: string,
+  operation: StockOperation,
+  quantity: number
+) {
+  const variant = await getVariantById(productId, variantId)
+
+  let newStock: number
+  if (operation === 'set') {
+    newStock = quantity
+  } else if (operation === 'add') {
+    newStock = variant.stock + quantity
+  } else {
+    newStock = variant.stock - quantity
+    if (newStock < 0)
+      throw AppError.badRequest(
+        `Cannot subtract ${quantity} from current stock of ${variant.stock}`
+      )
+  }
+
+  return prisma.productVariant.update({
+    where: { id: variantId },
+    data: { stock: newStock },
+  })
+}
+
 export async function createVariant(
   productId: string,
   data: Omit<CreateVariantInput, 'productId'>

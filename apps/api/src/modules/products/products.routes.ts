@@ -1,4 +1,5 @@
 import { Router } from 'express'
+import { z } from 'zod'
 import { validate } from '@/middleware/validate'
 import {
   createProductSchema,
@@ -10,6 +11,11 @@ import {
   slugParamSchema,
 } from '@repo/validation'
 import * as controller from './products.controller'
+
+const stockAdjustSchema = z.object({
+  operation: z.enum(['set', 'add', 'subtract']),
+  quantity: z.number().int().min(0),
+})
 
 const router: Router = Router()
 
@@ -34,6 +40,7 @@ router.delete('/:id', validate(idParamSchema, 'params'), controller.remove)
 
 // Public
 router.get('/:id/variants', validate(idParamSchema, 'params'), controller.listVariants)
+router.get('/:id/variants/:variantId', validate(idParamSchema, 'params'), controller.getVariant)
 
 // Admin-only (auth guard wired in Phase 3)
 router.post(
@@ -47,6 +54,12 @@ router.patch(
   validate(idParamSchema, 'params'),
   validate(updateVariantSchema),
   controller.updateVariant
+)
+router.patch(
+  '/:id/variants/:variantId/stock',
+  validate(idParamSchema, 'params'),
+  validate(stockAdjustSchema),
+  controller.adjustStock
 )
 router.delete(
   '/:id/variants/:variantId',
