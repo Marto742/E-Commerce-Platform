@@ -1,13 +1,13 @@
 import express, { type Application } from 'express'
 import helmet from 'helmet'
 import cors from 'cors'
-import morgan from 'morgan'
-import rateLimit from 'express-rate-limit'
 import { env } from '@/config/env'
 import router from '@/routes'
 import { notFound } from '@/middleware/notFound'
 import { errorHandler } from '@/middleware/error'
 import { requestId } from '@/middleware/requestId'
+import { requestLogger } from '@/middleware/requestLogger'
+import { globalLimiter } from '@/middleware/rateLimiter'
 
 export function createApp(): Application {
   const app = express()
@@ -37,26 +37,13 @@ export function createApp(): Application {
 
   // ── HTTP request logging (skip in test) ─────────────────
   if (env.NODE_ENV !== 'test') {
-    app.use(morgan('dev'))
+    app.use(requestLogger)
   }
 
   // ── Global rate limit (permissive — tightened per route) ─
-  // Auth endpoints: 10 req/15min (applied in Phase 3)
-  // Checkout: 5 req/min (applied in Phase 5)
-  const globalLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 500,
-    standardHeaders: true,
-    legacyHeaders: false,
-    message: {
-      success: false,
-      error: {
-        code: 'RATE_LIMITED',
-        message: 'Too many requests, please try again later',
-        details: [],
-      },
-    },
-  })
+  // authLimiter:     10 req/15min  → applied in Phase 3 on /auth routes
+  // writeLimiter:    30 req/min    → applied on cart, orders, reviews, wishlist
+  // checkoutLimiter:  5 req/min   → applied in Phase 5 on /checkout routes
   app.use(globalLimiter)
 
   // ── API routes (all under /v1) ───────────────────────────

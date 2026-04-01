@@ -2,6 +2,7 @@ import { Router } from 'express'
 import { z } from 'zod'
 import { validate } from '@/middleware/validate'
 import { parsePagination } from '@/middleware/pagination'
+import { searchLimiter, writeLimiter } from '@/middleware/rateLimiter'
 import {
   createProductSchema,
   updateProductSchema,
@@ -25,19 +26,26 @@ const router: Router = Router()
 // ── Products ──────────────────────────────────────────────
 
 // Public
-router.get('/', validate(productQuerySchema, 'query'), parsePagination, controller.list)
+router.get(
+  '/',
+  searchLimiter,
+  validate(productQuerySchema, 'query'),
+  parsePagination,
+  controller.list
+)
 router.get('/slug/:slug', validate(slugParamSchema, 'params'), controller.getBySlug)
 router.get('/:id', validate(idParamSchema, 'params'), controller.getOne)
 
 // Admin-only (auth guard wired in Phase 3)
-router.post('/', validate(createProductSchema), controller.create)
+router.post('/', writeLimiter, validate(createProductSchema), controller.create)
 router.patch(
   '/:id',
+  writeLimiter,
   validate(idParamSchema, 'params'),
   validate(updateProductSchema),
   controller.update
 )
-router.delete('/:id', validate(idParamSchema, 'params'), controller.remove)
+router.delete('/:id', writeLimiter, validate(idParamSchema, 'params'), controller.remove)
 
 // ── Reviews (product-scoped) ──────────────────────────────
 
