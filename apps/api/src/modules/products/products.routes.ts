@@ -8,10 +8,12 @@ import {
   createVariantSchema,
   updateVariantSchema,
   productQuerySchema,
+  reviewQuerySchema,
   idParamSchema,
   slugParamSchema,
 } from '@repo/validation'
 import * as controller from './products.controller'
+import * as reviewsController from '@/modules/reviews/reviews.controller'
 
 const stockAdjustSchema = z.object({
   operation: z.enum(['set', 'add', 'subtract']),
@@ -36,6 +38,22 @@ router.patch(
   controller.update
 )
 router.delete('/:id', validate(idParamSchema, 'params'), controller.remove)
+
+// ── Reviews (product-scoped) ──────────────────────────────
+
+// Public
+router.get(
+  '/:id/reviews',
+  validate(idParamSchema, 'params'),
+  validate(reviewQuerySchema, 'query'),
+  parsePagination,
+  reviewsController.listForProduct
+)
+router.get(
+  '/:id/reviews/summary',
+  validate(idParamSchema, 'params'),
+  reviewsController.productSummary
+)
 
 // ── Variants ──────────────────────────────────────────────
 

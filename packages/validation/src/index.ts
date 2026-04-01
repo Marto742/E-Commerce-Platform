@@ -49,8 +49,8 @@ export { createOrderSchema, updateOrderStatusSchema, orderQuerySchema } from './
 export type { CreateOrderInput, UpdateOrderStatusInput, OrderQueryInput } from './schemas/order'
 
 // Review
-export { createReviewSchema, updateReviewSchema } from './schemas/review'
-export type { CreateReviewInput, UpdateReviewInput } from './schemas/review'
+export { createReviewSchema, updateReviewSchema, reviewQuerySchema } from './schemas/review'
+export type { CreateReviewInput, UpdateReviewInput, ReviewQueryInput } from './schemas/review'
 
 // Coupon
 export { createCouponSchema, updateCouponSchema, applyCouponSchema } from './schemas/coupon'

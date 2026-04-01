@@ -5,6 +5,7 @@ import categoriesRouter from '@/modules/categories/categories.routes'
 import cartRouter from '@/modules/cart/cart.routes'
 import ordersRouter from '@/modules/orders/orders.routes'
 import inventoryRouter from '@/modules/inventory/inventory.routes'
+import reviewsRouter from '@/modules/reviews/reviews.routes'
 
 const router: Router = Router()
 
@@ -33,6 +34,9 @@ router.use('/orders', ordersRouter)
 
 // ── Uploads ───────────────────────────────────────────────
 // router.use('/uploads', uploadsRouter)    // Phase 9
+
+// ── Reviews ───────────────────────────────────────────────
+router.use('/reviews', reviewsRouter)
 
 // ── Inventory ─────────────────────────────────────────────
 router.use('/inventory', inventoryRouter)
