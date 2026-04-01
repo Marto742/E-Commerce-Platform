@@ -56,6 +56,10 @@ export type { CreateReviewInput, UpdateReviewInput } from './schemas/review'
 export { createCouponSchema, updateCouponSchema, applyCouponSchema } from './schemas/coupon'
 export type { CreateCouponInput, UpdateCouponInput, ApplyCouponInput } from './schemas/coupon'
 
+// Inventory
+export { inventoryQuerySchema, lowStockQuerySchema } from './schemas/inventory'
+export type { InventoryQueryInput, LowStockQueryInput } from './schemas/inventory'
+
 // Common
 export { paginationSchema, idParamSchema, slugParamSchema } from './schemas/common'
 export type { PaginationInput, IdParamInput, SlugParamInput } from './schemas/common'

@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import { z } from 'zod'
 import { validate } from '@/middleware/validate'
+import { parsePagination } from '@/middleware/pagination'
 import { createOrderSchema, orderQuerySchema, idParamSchema } from '@repo/validation'
 import * as controller from './orders.controller'
 
@@ -13,7 +14,7 @@ const updateStatusBodySchema = z.object({
   status: z.enum(['CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED', 'REFUNDED']),
 })
 
-router.get('/', validate(orderQuerySchema, 'query'), controller.list)
+router.get('/', validate(orderQuerySchema, 'query'), parsePagination, controller.list)
 router.get('/:id', validate(idParamSchema, 'params'), controller.getOne)
 router.post('/', validate(createOrderSchema), controller.create)
 

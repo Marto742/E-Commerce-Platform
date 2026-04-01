@@ -1,6 +1,8 @@
 import { Router } from 'express'
 import { z } from 'zod'
 import { validate } from '@/middleware/validate'
+import { parsePagination } from '@/middleware/pagination'
+import { inventoryQuerySchema, lowStockQuerySchema } from '@repo/validation'
 import * as controller from './inventory.controller'
 
 const router: Router = Router()
@@ -19,9 +21,14 @@ const bulkUpdateSchema = z.object({
 })
 
 // Admin-only (auth guard wired in Phase 3)
-router.get('/', controller.list)
+router.get('/', validate(inventoryQuerySchema, 'query'), parsePagination, controller.list)
 router.get('/summary', controller.summary)
-router.get('/low-stock', controller.lowStock)
+router.get(
+  '/low-stock',
+  validate(lowStockQuerySchema, 'query'),
+  parsePagination,
+  controller.lowStock
+)
 router.get('/sku/:sku', controller.getBySku)
 router.patch('/bulk', validate(bulkUpdateSchema), controller.bulkUpdate)
 

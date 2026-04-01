@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import { z } from 'zod'
 import { validate } from '@/middleware/validate'
+import { parsePagination } from '@/middleware/pagination'
 import {
   createProductSchema,
   updateProductSchema,
@@ -22,7 +23,7 @@ const router: Router = Router()
 // ── Products ──────────────────────────────────────────────
 
 // Public
-router.get('/', validate(productQuerySchema, 'query'), controller.list)
+router.get('/', validate(productQuerySchema, 'query'), parsePagination, controller.list)
 router.get('/slug/:slug', validate(slugParamSchema, 'params'), controller.getBySlug)
 router.get('/:id', validate(idParamSchema, 'params'), controller.getOne)
 
