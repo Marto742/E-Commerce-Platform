@@ -3,11 +3,12 @@ import { ZodError } from 'zod'
 import { AppError } from '@/utils/AppError'
 import { Prisma } from '@/generated/prisma/client'
 import { env } from '@/config/env'
+import { logger } from '@/lib/logger'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function errorLog(req: Request, statusCode: number, err: unknown) {
-  const entry = {
+  const meta = {
     requestId: req.id,
     method: req.method,
     path: req.path,
@@ -17,9 +18,9 @@ function errorLog(req: Request, statusCode: number, err: unknown) {
   }
 
   if (statusCode >= 500) {
-    console.error('[ERROR]', JSON.stringify(entry))
+    logger.error('Request error', meta)
   } else if (env.NODE_ENV === 'development') {
-    console.warn('[WARN]', JSON.stringify(entry))
+    logger.warn('Request warning', meta)
   }
 }
 
