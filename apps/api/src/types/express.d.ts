@@ -8,6 +8,9 @@ declare namespace Express {
       status: 'UNVERIFIED' | 'ACTIVE' | 'SUSPENDED' | 'DELETED'
     }
 
+    // Populated by requestId() middleware.
+    id?: string
+
     // Populated by parsePagination() middleware.
     pagination?: {
       page: number

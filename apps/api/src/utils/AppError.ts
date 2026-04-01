@@ -43,4 +43,20 @@ export class AppError extends Error {
   static badRequest(message: string) {
     return new AppError(422, 'VALIDATION_ERROR', message)
   }
+
+  static insufficientStock(message = 'Insufficient stock') {
+    return new AppError(422, 'INSUFFICIENT_STOCK', message)
+  }
+
+  static couponInvalid(message = 'Coupon is invalid or expired') {
+    return new AppError(422, 'COUPON_INVALID', message)
+  }
+
+  static tooManyRequests(message = 'Too many requests, please try again later') {
+    return new AppError(429, 'RATE_LIMITED', message)
+  }
+
+  static internal(message = 'An unexpected error occurred') {
+    return new AppError(500, 'INTERNAL_ERROR', message)
+  }
 }

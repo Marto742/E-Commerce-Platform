@@ -7,12 +7,16 @@ import { env } from '@/config/env'
 import router from '@/routes'
 import { notFound } from '@/middleware/notFound'
 import { errorHandler } from '@/middleware/error'
+import { requestId } from '@/middleware/requestId'
 
 export function createApp(): Application {
   const app = express()
 
   // Trust Railway/Vercel reverse proxy — required for rate limiting to work correctly
   app.set('trust proxy', 1)
+
+  // ── Request ID (first — all subsequent middleware can use req.id) ─
+  app.use(requestId)
 
   // ── Security headers ────────────────────────────────────
   app.use(helmet())
