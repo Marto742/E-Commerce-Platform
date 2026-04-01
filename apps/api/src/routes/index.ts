@@ -6,6 +6,7 @@ import cartRouter from '@/modules/cart/cart.routes'
 import ordersRouter from '@/modules/orders/orders.routes'
 import inventoryRouter from '@/modules/inventory/inventory.routes'
 import reviewsRouter from '@/modules/reviews/reviews.routes'
+import wishlistRouter from '@/modules/wishlist/wishlist.routes'
 
 const router: Router = Router()
 
@@ -37,6 +38,9 @@ router.use('/orders', ordersRouter)
 
 // ── Reviews ───────────────────────────────────────────────
 router.use('/reviews', reviewsRouter)
+
+// ── Wishlist ──────────────────────────────────────────────
+router.use('/wishlist', wishlistRouter)
 
 // ── Inventory ─────────────────────────────────────────────
 router.use('/inventory', inventoryRouter)

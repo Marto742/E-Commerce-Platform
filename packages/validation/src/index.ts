@@ -60,6 +60,20 @@ export type { CreateCouponInput, UpdateCouponInput, ApplyCouponInput } from './s
 export { inventoryQuerySchema, lowStockQuerySchema } from './schemas/inventory'
 export type { InventoryQueryInput, LowStockQueryInput } from './schemas/inventory'
 
+// Wishlist
+export { addToWishlistSchema } from './schemas/wishlist'
+export type { AddToWishlistInput } from './schemas/wishlist'
+
 // Common
-export { paginationSchema, idParamSchema, slugParamSchema } from './schemas/common'
-export type { PaginationInput, IdParamInput, SlugParamInput } from './schemas/common'
+export {
+  paginationSchema,
+  idParamSchema,
+  slugParamSchema,
+  productIdParamSchema,
+} from './schemas/common'
+export type {
+  PaginationInput,
+  IdParamInput,
+  SlugParamInput,
+  ProductIdParamInput,
+} from './schemas/common'

@@ -18,3 +18,9 @@ export const slugParamSchema = z.object({
 })
 
 export type SlugParamInput = z.infer<typeof slugParamSchema>
+
+export const productIdParamSchema = z.object({
+  productId: z.string().cuid(),
+})
+
+export type ProductIdParamInput = z.infer<typeof productIdParamSchema>
