@@ -1,5 +1,7 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
+import { QueryProvider } from '@repo/ui'
+import { Devtools } from './devtools'
 import './globals.css'
 
 const inter = Inter({
@@ -16,15 +18,14 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 }
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <body className={`${inter.variable} font-sans antialiased`}>
-        {children}
+        <QueryProvider>
+          {children}
+          {process.env.NODE_ENV !== 'production' && <Devtools />}
+        </QueryProvider>
       </body>
     </html>
   )

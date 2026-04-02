@@ -11,6 +11,9 @@
     "clean": "rm -rf .next out"
   },
   "dependencies": {
+    "@repo/ui": "workspace:^",
+    "@tanstack/react-query": "^5.62.0",
+    "@tanstack/react-query-devtools": "^5.62.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^0.468.0",
@@ -22,6 +25,7 @@
   "devDependencies": {
     "@repo/eslint-config": "workspace:^",
     "@repo/tsconfig": "workspace:^",
+    "tailwindcss-animate": "^1.0.7",
     "@types/node": "^20.17.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
