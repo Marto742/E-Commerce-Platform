@@ -2,6 +2,8 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import { QueryProvider } from '@repo/ui'
 import { CartProvider } from '@/store/cart'
+import { Navbar } from '@/components/layout/navbar'
+import { Footer } from '@/components/layout/footer'
 import { Devtools } from './devtools'
 import './globals.css'
 
@@ -24,7 +26,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.variable} font-sans antialiased`}>
         <QueryProvider>
-          <CartProvider>{children}</CartProvider>
+          <CartProvider>
+            <Navbar />
+            {children}
+            <Footer />
+          </CartProvider>
           {process.env.NODE_ENV !== 'production' && <Devtools />}
         </QueryProvider>
       </body>
