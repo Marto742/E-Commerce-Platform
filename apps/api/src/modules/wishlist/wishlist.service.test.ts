@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { prisma } from '@/lib/prisma'
 import { getWishlist, addItem, removeItem, clearWishlist, isWishlisted } from './wishlist.service'
-import { AppError } from '@/utils/AppError'
 
 vi.mock('@/lib/prisma', () => ({
   prisma: {

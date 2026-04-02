@@ -7,7 +7,6 @@ import {
   updateOrderStatus,
   cancelOrder,
 } from './orders.service'
-import { AppError } from '@/utils/AppError'
 
 vi.mock('@/lib/prisma', () => ({
   prisma: {

@@ -9,7 +9,6 @@ import {
   updateReview,
   deleteReview,
 } from './reviews.service'
-import { AppError } from '@/utils/AppError'
 
 vi.mock('@/lib/prisma', () => ({
   prisma: {

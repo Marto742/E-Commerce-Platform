@@ -14,7 +14,6 @@ import {
   updateVariant,
   deleteVariant,
 } from './products.service'
-import { AppError } from '@/utils/AppError'
 
 vi.mock('@/lib/prisma', () => ({
   prisma: {

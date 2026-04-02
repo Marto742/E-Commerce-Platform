@@ -2,7 +2,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { prisma } from '@/lib/prisma'
 import { addItem, updateItem, removeItem, clearCart, getCart } from './cart.service'
 import type { CartIdentifier } from './cart.service'
-import { AppError } from '@/utils/AppError'
 
 vi.mock('@/lib/prisma', () => ({
   prisma: {

@@ -8,7 +8,6 @@ import {
   bulkUpdateStock,
   DEFAULT_LOW_STOCK_THRESHOLD,
 } from './inventory.service'
-import { AppError } from '@/utils/AppError'
 
 vi.mock('@/lib/prisma', () => ({
   prisma: {
