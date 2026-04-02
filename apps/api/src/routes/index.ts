@@ -1,5 +1,6 @@
 import { Router } from 'express'
 import healthRouter from './health'
+import docsRouter from './docs'
 import productsRouter from '@/modules/products/products.routes'
 import categoriesRouter from '@/modules/categories/categories.routes'
 import cartRouter from '@/modules/cart/cart.routes'
@@ -12,6 +13,9 @@ const router: Router = Router()
 
 // ── System ────────────────────────────────────────────────
 router.use('/health', healthRouter)
+
+// ── API Docs ──────────────────────────────────────────────
+router.use('/', docsRouter)
 
 // ── Auth ──────────────────────────────────────────────────
 // router.use('/auth', authRouter)          // Phase 3
