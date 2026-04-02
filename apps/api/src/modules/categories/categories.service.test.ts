@@ -80,7 +80,7 @@ describe('getCategoryById', () => {
 // ─── createCategory ───────────────────────────────────────────────────────────
 
 describe('createCategory', () => {
-  const input = { name: 'Laptops', slug: 'laptops' }
+  const input = { name: 'Laptops', slug: 'laptops', sortOrder: 0, isActive: true }
 
   it('creates and returns a new category', async () => {
     vi.mocked(prisma.category.findUnique).mockResolvedValue(null)
@@ -100,7 +100,7 @@ describe('createCategory', () => {
   })
 
   it('throws notFound when parentId does not exist', async () => {
-    const inputWithParent = { ...input, parentId: 'missing-parent' }
+    const inputWithParent = { ...input, parentId: 'clh3xfzvy0000356ok9cxx5oi' }
     // First call: slug check → null; second call: parent check → null
     vi.mocked(prisma.category.findUnique).mockResolvedValueOnce(null).mockResolvedValueOnce(null)
     await expect(createCategory(inputWithParent)).rejects.toMatchObject({

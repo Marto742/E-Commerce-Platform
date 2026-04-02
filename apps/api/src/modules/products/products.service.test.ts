@@ -132,9 +132,11 @@ describe('createProduct', () => {
   const input = {
     name: 'Gadget',
     slug: 'gadget',
-    categoryId: 'cat-1',
-    basePrice: 19.99,
+    categoryId: 'clh3xfzvy0000356ok9cxx5oi',
+    basePrice: '19.99',
     description: 'A gadget',
+    isActive: true,
+    isFeatured: false,
   }
 
   it('creates and returns product', async () => {
@@ -302,7 +304,14 @@ describe('adjustStock', () => {
 // ─── createVariant ────────────────────────────────────────────────────────────
 
 describe('createVariant', () => {
-  const variantInput = { sku: 'WGT-002', name: 'Large', price: 12.99 }
+  const variantInput = {
+    sku: 'WGT-002',
+    name: 'Large',
+    price: '12.99',
+    stock: 0,
+    attributes: {},
+    isActive: true,
+  }
 
   it('creates a new variant', async () => {
     vi.mocked(prisma.product.findUnique).mockResolvedValue(mockProduct as never)
