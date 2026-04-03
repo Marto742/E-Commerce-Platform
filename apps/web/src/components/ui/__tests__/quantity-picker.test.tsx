@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QuantityPicker } from '../quantity-picker'
@@ -119,7 +119,7 @@ describe('QuantityPicker', () => {
 
   describe('disabled state', () => {
     it('renders with reduced interactivity when disabled', () => {
-      const { input, decrement, increment } = setup({ value: 2, disabled: true })
+      const { input } = setup({ value: 2, disabled: true })
       // The wrapper has pointer-events-none; the input itself is disabled
       expect(input()).toBeDisabled()
     })
