@@ -1,8 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import Link from 'next/link'
-import { ChevronRight, ShoppingCart } from 'lucide-react'
+import { ShoppingCart } from 'lucide-react'
+import { Breadcrumbs } from '@/components/ui/breadcrumbs'
 import { Button } from '@repo/ui'
 import { cn } from '@repo/ui'
 import { StarRating } from '@/components/ui/star-rating'
@@ -72,25 +72,21 @@ export function ProductDetailView({ product }: ProductDetailViewProps) {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-      {/* Breadcrumb */}
-      <nav className="mb-6 flex items-center gap-1.5 text-sm text-muted-foreground">
-        <Link href="/" className="hover:text-foreground">
-          Home
-        </Link>
-        <ChevronRight className="size-3.5" />
-        <Link href="/products" className="hover:text-foreground">
-          Products
-        </Link>
-        <ChevronRight className="size-3.5" />
-        <Link
-          href={`/products?categoryId=${product.category?.id}`}
-          className="hover:text-foreground"
-        >
-          {product.category?.name}
-        </Link>
-        <ChevronRight className="size-3.5" />
-        <span className="line-clamp-1 text-foreground">{product.name}</span>
-      </nav>
+      <Breadcrumbs
+        className="mb-6"
+        items={[
+          { label: 'Products', href: '/products' },
+          ...(product.category
+            ? [
+                {
+                  label: product.category.name,
+                  href: `/products?categoryId=${product.category.id}`,
+                },
+              ]
+            : []),
+          { label: product.name },
+        ]}
+      />
 
       {/* Main layout */}
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 lg:gap-12">

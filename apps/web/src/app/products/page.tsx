@@ -2,6 +2,7 @@ import { Suspense } from 'react'
 import type { Metadata } from 'next'
 import { ProductsContainer } from '@/components/products/products-container'
 import { ProductCardSkeleton } from '@/components/product/product-card'
+import { Breadcrumbs } from '@/components/ui/breadcrumbs'
 
 export const metadata: Metadata = {
   title: 'All Products',
@@ -35,8 +36,13 @@ function ProductsLoadingFallback() {
 
 export default function ProductsPage() {
   return (
-    <Suspense fallback={<ProductsLoadingFallback />}>
-      <ProductsContainer />
-    </Suspense>
+    <>
+      <div className="mx-auto max-w-7xl px-4 pt-6 sm:px-6 lg:px-8">
+        <Breadcrumbs items={[{ label: 'Products' }]} />
+      </div>
+      <Suspense fallback={<ProductsLoadingFallback />}>
+        <ProductsContainer />
+      </Suspense>
+    </>
   )
 }
