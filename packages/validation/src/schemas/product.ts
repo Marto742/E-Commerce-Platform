@@ -57,6 +57,10 @@ const SortOrder = z.enum(['asc', 'desc'])
 export const productQuerySchema = paginationSchema.extend({
   search: z.string().optional(),
   categoryId: z.string().cuid().optional(),
+  isFeatured: z
+    .enum(['true', 'false'])
+    .transform((v) => v === 'true')
+    .optional(),
   minPrice: decimalSchema.optional(),
   maxPrice: decimalSchema.optional(),
   minRating: z.coerce.number().int().min(1).max(5).optional(),

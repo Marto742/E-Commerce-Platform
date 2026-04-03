@@ -25,6 +25,7 @@ export async function listProducts(query: ProductQueryInput) {
     limit,
     search,
     categoryId,
+    isFeatured,
     minPrice,
     maxPrice,
     minRating,
@@ -36,6 +37,7 @@ export async function listProducts(query: ProductQueryInput) {
   const where = {
     isActive: true,
     ...(categoryId && { categoryId }),
+    ...(isFeatured !== undefined && { isFeatured }),
     ...(search && {
       OR: [
         { name: { contains: search, mode: 'insensitive' as const } },
