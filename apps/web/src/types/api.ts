@@ -74,6 +74,43 @@ export interface ProductListItem extends Omit<Product, 'description'> {
   _count: { variants: number; reviews: number }
 }
 
+// ─── Server cart (API response shape) ────────────────────────────────────────
+
+export interface ServerCartProduct {
+  id: string
+  name: string
+  slug: string
+  basePrice: string
+  comparePrice: string | null
+  images: { url: string; altText: string | null }[]
+}
+
+export interface ServerCartVariant {
+  id: string
+  sku: string
+  name: string
+  price: string
+  stock: number
+  attributes: Record<string, unknown>
+  isActive: boolean
+  product: ServerCartProduct
+}
+
+export interface ServerCartItem {
+  id: string
+  cartId: string
+  variantId: string
+  quantity: number
+  variant: ServerCartVariant
+}
+
+export interface ServerCart {
+  id: string
+  userId: string | null
+  sessionId: string | null
+  items: ServerCartItem[]
+}
+
 // ─── Reviews ──────────────────────────────────────────────────────────────────
 
 export interface ReviewUser {

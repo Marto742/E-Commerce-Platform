@@ -6,7 +6,8 @@ import { ShoppingCart } from 'lucide-react'
 import { cn } from '@repo/ui'
 import { Button } from '@repo/ui'
 import { StarRating } from '@/components/ui/star-rating'
-import { useIsInCart, useCartActions } from '@/store/cart'
+import { useIsInCart } from '@/store/cart'
+import { useCartMutations } from '@/hooks/use-cart-mutations'
 import type { ProductListItem } from '@/types/api'
 
 interface ProductCardProps {
@@ -33,7 +34,7 @@ function DiscountBadge({ base, compare }: { base: string; compare: string }) {
 
 export function ProductCard({ product, className }: ProductCardProps) {
   const inCart = useIsInCart(product.variants?.[0]?.id ?? product.id)
-  const { addItem } = useCartActions()
+  const { addItem } = useCartMutations()
 
   const primaryImage = product.images[0]
   const lowestVariantPrice =

@@ -5,7 +5,8 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { X, Minus, Plus, Trash2, ShoppingBag } from 'lucide-react'
 import { cn } from '@repo/ui'
-import { useCart, useCartActions, useCartTotals } from '@/store/cart'
+import { useCart, useCartTotals } from '@/store/cart'
+import { useCartMutations } from '@/hooks/use-cart-mutations'
 import { useCartDrawer } from './cart-drawer-context'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -17,7 +18,7 @@ function fmt(amount: number) {
 // ─── Cart item row ────────────────────────────────────────────────────────────
 
 function CartItemRow({ item }: { item: ReturnType<typeof useCart>['items'][number] }) {
-  const { removeItem, updateQuantity } = useCartActions()
+  const { removeItem, updateQuantity } = useCartMutations()
   const unitPrice = parseFloat(item.variant.price)
   const lineTotal = unitPrice * item.quantity
 

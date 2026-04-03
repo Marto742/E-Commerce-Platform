@@ -1,6 +1,7 @@
 'use client'
 
 import { createContext, useCallback, useContext, useState } from 'react'
+import { useCartInit } from '@/hooks/use-cart-mutations'
 
 interface CartDrawerContextValue {
   isOpen: boolean
@@ -12,6 +13,7 @@ interface CartDrawerContextValue {
 const CartDrawerContext = createContext<CartDrawerContextValue | null>(null)
 
 export function CartDrawerProvider({ children }: { children: React.ReactNode }) {
+  useCartInit()
   const [isOpen, setIsOpen] = useState(false)
   const open = useCallback(() => setIsOpen(true), [])
   const close = useCallback(() => setIsOpen(false), [])

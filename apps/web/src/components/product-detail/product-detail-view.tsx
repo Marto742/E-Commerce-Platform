@@ -9,7 +9,8 @@ import { StarRating } from '@/components/ui/star-rating'
 import { ProductGallery } from './product-gallery'
 import { VariantSelector } from './variant-selector'
 import { ProductReviews } from './product-reviews'
-import { useCartActions, useIsInCart } from '@/store/cart'
+import { useIsInCart } from '@/store/cart'
+import { useCartMutations } from '@/hooks/use-cart-mutations'
 import type { Product, ProductVariant } from '@/types/api'
 
 interface ProductDetailViewProps {
@@ -39,7 +40,7 @@ export function ProductDetailView({ product }: ProductDetailViewProps) {
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(variants[0] ?? null)
   const [quantity, setQuantity] = useState(1)
 
-  const { addItem } = useCartActions()
+  const { addItem } = useCartMutations()
   const inCart = useIsInCart(selectedVariant?.id ?? '')
 
   const displayPrice = selectedVariant?.price ?? product.basePrice

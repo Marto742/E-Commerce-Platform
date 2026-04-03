@@ -15,6 +15,8 @@ const CART_INCLUDE = {
               id: true,
               name: true,
               slug: true,
+              basePrice: true,
+              comparePrice: true,
               images: {
                 take: 1,
                 orderBy: { sortOrder: 'asc' as const },
