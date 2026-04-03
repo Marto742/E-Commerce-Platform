@@ -134,7 +134,7 @@ export interface RatingDistribution {
 }
 
 export interface RatingSummary {
-  avgRating: number
+  avgRating: number | null
   totalReviews: number
   distribution: RatingDistribution[]
 }

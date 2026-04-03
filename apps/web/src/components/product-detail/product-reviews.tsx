@@ -61,7 +61,7 @@ export function ProductReviews({ productId, reviewCount }: ProductReviewsProps) 
           {/* Average score */}
           <div className="flex flex-col items-center gap-1">
             <span className="text-5xl font-bold text-foreground">
-              {summary.avgRating.toFixed(1)}
+              {(summary.avgRating ?? 0).toFixed(1)}
             </span>
             <StarRating rating={summary.avgRating} size="md" />
             <span className="text-sm text-muted-foreground">{summary.totalReviews} reviews</span>
