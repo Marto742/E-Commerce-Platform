@@ -37,6 +37,9 @@ vi.mock('@/lib/prisma', () => ({
     category: {
       findUnique: vi.fn(),
     },
+    review: {
+      groupBy: vi.fn().mockResolvedValue([]),
+    },
     $transaction: vi.fn(),
   },
 }))
@@ -75,7 +78,7 @@ describe('listProducts', () => {
   it('returns paginated products', async () => {
     vi.mocked(prisma.$transaction).mockResolvedValue([[mockProduct], 1] as never)
     const result = await listProducts({ page: 1, limit: 10 })
-    expect(result.products).toEqual([mockProduct])
+    expect(result.products).toEqual([{ ...mockProduct, avgRating: null }])
     expect(result.meta.total).toBe(1)
     expect(result.meta.page).toBe(1)
   })
