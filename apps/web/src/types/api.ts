@@ -128,13 +128,8 @@ export interface Review {
   user: ReviewUser
 }
 
-export interface RatingDistribution {
-  rating: number
-  count: number
-}
-
 export interface RatingSummary {
-  avgRating: number | null
-  totalReviews: number
-  distribution: RatingDistribution[]
+  average: number | null
+  count: number
+  distribution: Record<number, number>
 }

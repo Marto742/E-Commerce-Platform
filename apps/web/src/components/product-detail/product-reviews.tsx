@@ -61,25 +61,22 @@ export function ProductReviews({ productId, reviewCount }: ProductReviewsProps) 
           {/* Average score */}
           <div className="flex flex-col items-center gap-1">
             <span className="text-5xl font-bold text-foreground">
-              {(summary.avgRating ?? 0).toFixed(1)}
+              {(summary.average ?? 0).toFixed(1)}
             </span>
-            <StarRating rating={summary.avgRating} size="md" />
-            <span className="text-sm text-muted-foreground">{summary.totalReviews} reviews</span>
+            <StarRating rating={summary.average} size="md" />
+            <span className="text-sm text-muted-foreground">{summary.count} reviews</span>
           </div>
 
           {/* Distribution bars */}
           <div className="flex w-full max-w-xs flex-col gap-1.5">
-            {[5, 4, 3, 2, 1].map((star) => {
-              const entry = summary.distribution.find((d) => d.rating === star)
-              return (
-                <RatingBar
-                  key={star}
-                  star={star}
-                  count={entry?.count ?? 0}
-                  total={summary.totalReviews}
-                />
-              )
-            })}
+            {[5, 4, 3, 2, 1].map((star) => (
+              <RatingBar
+                key={star}
+                star={star}
+                count={summary.distribution[star] ?? 0}
+                total={summary.count}
+              />
+            ))}
           </div>
         </div>
       )}
