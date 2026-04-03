@@ -36,7 +36,7 @@ export function useProducts(
 export function useProduct(id: string) {
   return useQuery({
     queryKey: productKeys.detail(id),
-    queryFn: () => api.get<Product>(`/products/${id}`),
+    queryFn: () => api.get<{ data: Product }>(`/products/${id}`).then((r) => r.data),
     enabled: !!id,
   })
 }
@@ -44,7 +44,7 @@ export function useProduct(id: string) {
 export function useProductBySlug(slug: string) {
   return useQuery({
     queryKey: productKeys.slug(slug),
-    queryFn: () => api.get<Product>(`/products/slug/${slug}`),
+    queryFn: () => api.get<{ data: Product }>(`/products/slug/${slug}`).then((r) => r.data),
     enabled: !!slug,
   })
 }

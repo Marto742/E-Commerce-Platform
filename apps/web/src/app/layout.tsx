@@ -4,6 +4,8 @@ import { QueryProvider } from '@repo/ui'
 import { CartProvider } from '@/store/cart'
 import { Navbar } from '@/components/layout/navbar'
 import { Footer } from '@/components/layout/footer'
+import { CartDrawerProvider } from '@/components/cart/cart-drawer-context'
+import { CartDrawer } from '@/components/cart/cart-drawer'
 import { Devtools } from './devtools'
 import './globals.css'
 
@@ -27,9 +29,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className={`${inter.variable} font-sans antialiased`}>
         <QueryProvider>
           <CartProvider>
-            <Navbar />
-            {children}
-            <Footer />
+            <CartDrawerProvider>
+              <Navbar />
+              {children}
+              <Footer />
+              <CartDrawer />
+            </CartDrawerProvider>
           </CartProvider>
           {process.env.NODE_ENV !== 'production' && <Devtools />}
         </QueryProvider>

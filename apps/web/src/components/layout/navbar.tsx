@@ -6,6 +6,7 @@ import { useState } from 'react'
 import { cn } from '@repo/ui'
 import { Button } from '@repo/ui'
 import { useCartItemCount } from '@/store/cart'
+import { useCartDrawer } from '@/components/cart/cart-drawer-context'
 
 const NAV_LINKS = [
   { href: '/products', label: 'All Products' },
@@ -16,6 +17,7 @@ const NAV_LINKS = [
 export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false)
   const itemCount = useCartItemCount()
+  const { open: openCart } = useCartDrawer()
 
   return (
     <header className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur-md">
@@ -45,9 +47,9 @@ export function Navbar() {
             <Search />
           </Button>
 
-          <Link
-            href="/cart"
-            aria-label="Cart"
+          <button
+            onClick={openCart}
+            aria-label={`Cart${itemCount > 0 ? `, ${itemCount} items` : ''}`}
             className="relative inline-flex h-10 w-10 items-center justify-center rounded-md text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <ShoppingCart className="size-4" />
@@ -56,7 +58,7 @@ export function Navbar() {
                 {itemCount > 99 ? '99+' : itemCount}
               </span>
             )}
-          </Link>
+          </button>
 
           <Link
             href="/auth/login"

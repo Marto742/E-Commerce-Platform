@@ -73,3 +73,31 @@ export interface ProductListItem extends Omit<Product, 'description'> {
   avgRating: number | null
   _count: { variants: number; reviews: number }
 }
+
+// ─── Reviews ──────────────────────────────────────────────────────────────────
+
+export interface ReviewUser {
+  id: string
+  name: string | null
+}
+
+export interface Review {
+  id: string
+  rating: number
+  title: string | null
+  body: string | null
+  isVerifiedPurchase: boolean
+  createdAt: string
+  user: ReviewUser
+}
+
+export interface RatingDistribution {
+  rating: number
+  count: number
+}
+
+export interface RatingSummary {
+  avgRating: number
+  totalReviews: number
+  distribution: RatingDistribution[]
+}

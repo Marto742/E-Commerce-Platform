@@ -13,7 +13,13 @@ const nextConfig: NextConfig = {
         protocol: 'https',
         hostname: '*.yourdomain.com',
       },
+      {
+        protocol: 'https',
+        hostname: 'placehold.co',
+      },
     ],
+    dangerouslyAllowSVG: true,
+    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
   // Transpile shared workspace packages
   transpilePackages: ['@repo/ui', '@repo/utils', '@repo/validation'],

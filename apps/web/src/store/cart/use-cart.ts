@@ -2,6 +2,7 @@
 
 import { useContext } from 'react'
 import { useStore } from 'zustand'
+import { useShallow } from 'zustand/shallow'
 import { CartStoreContext } from './cart-provider'
 import type { CartState, CartTotals } from './types'
 
@@ -46,40 +47,44 @@ export function useCartItemQuantity(variantId: string) {
 
 /** Derived price totals for the cart summary / checkout. */
 export function useCartTotals(): CartTotals {
-  return useCartStore((state) => {
-    let subtotal = 0
-    let savings = 0
+  return useCartStore(
+    useShallow((state) => {
+      let subtotal = 0
+      let savings = 0
 
-    for (const item of state.items) {
-      const unitPrice = parseFloat(item.variant.price)
-      const comparePrice = item.variant.product.comparePrice
-        ? parseFloat(item.variant.product.comparePrice)
-        : null
+      for (const item of state.items) {
+        const unitPrice = parseFloat(item.variant.price)
+        const comparePrice = item.variant.product.comparePrice
+          ? parseFloat(item.variant.product.comparePrice)
+          : null
 
-      subtotal += unitPrice * item.quantity
+        subtotal += unitPrice * item.quantity
 
-      if (comparePrice !== null && comparePrice > unitPrice) {
-        savings += (comparePrice - unitPrice) * item.quantity
+        if (comparePrice !== null && comparePrice > unitPrice) {
+          savings += (comparePrice - unitPrice) * item.quantity
+        }
       }
-    }
 
-    return {
-      subtotal,
-      savings,
-      itemCount: state.items.reduce((acc, item) => acc + item.quantity, 0),
-      lineCount: state.items.length,
-    }
-  })
+      return {
+        subtotal,
+        savings,
+        itemCount: state.items.reduce((acc, item) => acc + item.quantity, 0),
+        lineCount: state.items.length,
+      }
+    })
+  )
 }
 
 /** Just the cart actions — stable reference, won't cause re-renders on item changes. */
 export function useCartActions() {
-  return useCartStore((state) => ({
-    addItem: state.addItem,
-    removeItem: state.removeItem,
-    updateQuantity: state.updateQuantity,
-    clearCart: state.clearCart,
-    syncFromServer: state.syncFromServer,
-    setSyncing: state.setSyncing,
-  }))
+  return useCartStore(
+    useShallow((state) => ({
+      addItem: state.addItem,
+      removeItem: state.removeItem,
+      updateQuantity: state.updateQuantity,
+      clearCart: state.clearCart,
+      syncFromServer: state.syncFromServer,
+      setSyncing: state.setSyncing,
+    }))
+  )
 }
