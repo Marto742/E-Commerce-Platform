@@ -8,7 +8,7 @@
   },
   "scripts": {
     "build": "tsc",
-    "dev": "email dev --port 3002",
+    "dev": "node -e \"console.log('[@repo/email] dev server not configured yet')\"",
     "lint": "eslint src/",
     "lint:fix": "eslint src/ --fix",
     "type-check": "tsc --noEmit",
