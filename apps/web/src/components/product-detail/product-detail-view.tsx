@@ -2,10 +2,11 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { ChevronRight, Minus, Plus, ShoppingCart } from 'lucide-react'
+import { ChevronRight, ShoppingCart } from 'lucide-react'
 import { Button } from '@repo/ui'
 import { cn } from '@repo/ui'
 import { StarRating } from '@/components/ui/star-rating'
+import { QuantityPicker } from '@/components/ui/quantity-picker'
 import { ProductGallery } from './product-gallery'
 import { VariantSelector } from './variant-selector'
 import { ProductReviews } from './product-reviews'
@@ -163,25 +164,13 @@ export function ProductDetailView({ product }: ProductDetailViewProps) {
 
           {/* Quantity + Add to cart */}
           <div className="flex items-center gap-3">
-            <div className="flex items-center rounded-md border">
-              <button
-                onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                disabled={quantity <= 1}
-                className="px-3 py-2 text-muted-foreground transition-colors hover:text-foreground disabled:opacity-40"
-                aria-label="Decrease quantity"
-              >
-                <Minus className="size-4" />
-              </button>
-              <span className="min-w-8 text-center text-sm font-medium">{quantity}</span>
-              <button
-                onClick={() => setQuantity((q) => Math.min(stock, q + 1))}
-                disabled={quantity >= stock}
-                className="px-3 py-2 text-muted-foreground transition-colors hover:text-foreground disabled:opacity-40"
-                aria-label="Increase quantity"
-              >
-                <Plus className="size-4" />
-              </button>
-            </div>
+            <QuantityPicker
+              value={quantity}
+              min={1}
+              max={stock}
+              disabled={!hasStock}
+              onChange={setQuantity}
+            />
 
             <Button
               className="flex-1"

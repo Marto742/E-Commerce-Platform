@@ -3,10 +3,11 @@
 import { useEffect, useRef } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { X, Minus, Plus, Trash2, ShoppingBag } from 'lucide-react'
+import { X, Trash2, ShoppingBag } from 'lucide-react'
 import { cn } from '@repo/ui'
 import { useCart, useCartTotals } from '@/store/cart'
 import { useCartMutations } from '@/hooks/use-cart-mutations'
+import { QuantityPicker } from '@/components/ui/quantity-picker'
 import { useCartDrawer } from './cart-drawer-context'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -60,31 +61,16 @@ function CartItemRow({ item }: { item: ReturnType<typeof useCart>['items'][numbe
         <p className="text-xs text-muted-foreground">{item.variant.name}</p>
 
         <div className="mt-auto flex items-center justify-between pt-1">
-          {/* Quantity stepper */}
-          <div className="flex items-center rounded-md border">
-            <button
-              onClick={() =>
-                item.quantity <= 1
-                  ? removeItem(item.variantId)
-                  : updateQuantity(item.variantId, item.quantity - 1)
-              }
-              className="px-2 py-1 text-muted-foreground transition-colors hover:text-foreground"
-              aria-label="Decrease quantity"
-            >
-              <Minus className="size-3" />
-            </button>
-            <span className="min-w-6 text-center text-xs font-medium">{item.quantity}</span>
-            <button
-              onClick={() => updateQuantity(item.variantId, item.quantity + 1)}
-              disabled={item.quantity >= item.variant.stock}
-              className="px-2 py-1 text-muted-foreground transition-colors hover:text-foreground disabled:opacity-40"
-              aria-label="Increase quantity"
-            >
-              <Plus className="size-3" />
-            </button>
-          </div>
-
-          {/* Line total */}
+          <QuantityPicker
+            value={item.quantity}
+            min={1}
+            max={item.variant.stock}
+            size="sm"
+            debounce={400}
+            onChange={(qty) =>
+              qty <= 0 ? removeItem(item.variantId) : updateQuantity(item.variantId, qty)
+            }
+          />
           <span className="text-sm font-semibold text-foreground">{fmt(lineTotal)}</span>
         </div>
       </div>
