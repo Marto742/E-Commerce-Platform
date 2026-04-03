@@ -2,9 +2,10 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { ShoppingCart, Star } from 'lucide-react'
+import { ShoppingCart } from 'lucide-react'
 import { cn } from '@repo/ui'
 import { Button } from '@repo/ui'
+import { StarRating } from '@/components/ui/star-rating'
 import { useIsInCart, useCartActions } from '@/store/cart'
 import type { ProductListItem } from '@/types/api'
 
@@ -122,7 +123,7 @@ export function ProductCard({ product, className }: ProductCardProps) {
         {/* Rating */}
         {product._count.reviews > 0 && (
           <div className="flex items-center gap-1">
-            <Star className="size-3 fill-warning text-warning" />
+            <StarRating rating={product.avgRating} />
             <span className="text-xs text-muted-foreground">({product._count.reviews})</span>
           </div>
         )}

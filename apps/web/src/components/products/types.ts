@@ -3,6 +3,7 @@ export interface ProductFiltersState {
   categoryId: string
   minPrice: string
   maxPrice: string
+  minRating: string
   sortBy: string
   sortOrder: 'asc' | 'desc'
   page: number
@@ -14,6 +15,7 @@ export const DEFAULT_FILTERS: ProductFiltersState = {
   categoryId: '',
   minPrice: '',
   maxPrice: '',
+  minRating: '',
   sortBy: 'createdAt',
   sortOrder: 'desc',
   page: 1,

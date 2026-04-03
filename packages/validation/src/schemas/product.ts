@@ -59,6 +59,7 @@ export const productQuerySchema = paginationSchema.extend({
   categoryId: z.string().cuid().optional(),
   minPrice: decimalSchema.optional(),
   maxPrice: decimalSchema.optional(),
+  minRating: z.coerce.number().int().min(1).max(5).optional(),
   sortBy: SortBy.optional(),
   sortOrder: SortOrder.optional(),
 })

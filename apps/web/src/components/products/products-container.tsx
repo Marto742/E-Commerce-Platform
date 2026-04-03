@@ -19,6 +19,7 @@ function filtersFromSearchParams(params: URLSearchParams): ProductFiltersState {
     categoryId: params.get('categoryId') ?? '',
     minPrice: params.get('minPrice') ?? '',
     maxPrice: params.get('maxPrice') ?? '',
+    minRating: params.get('minRating') ?? '',
     sortBy: params.get('sortBy') ?? DEFAULT_FILTERS.sortBy,
     sortOrder: (params.get('sortOrder') as 'asc' | 'desc') ?? DEFAULT_FILTERS.sortOrder,
     page: Number(params.get('page') ?? 1),
@@ -32,6 +33,7 @@ function buildSearchParams(filters: ProductFiltersState): URLSearchParams {
   if (filters.categoryId) params.set('categoryId', filters.categoryId)
   if (filters.minPrice) params.set('minPrice', filters.minPrice)
   if (filters.maxPrice) params.set('maxPrice', filters.maxPrice)
+  if (filters.minRating) params.set('minRating', filters.minRating)
   if (filters.sortBy !== DEFAULT_FILTERS.sortBy) params.set('sortBy', filters.sortBy)
   if (filters.sortOrder !== DEFAULT_FILTERS.sortOrder) params.set('sortOrder', filters.sortOrder)
   if (filters.page !== 1) params.set('page', String(filters.page))
@@ -80,6 +82,7 @@ export function ProductsContainer() {
     ...(filters.categoryId && { categoryId: filters.categoryId }),
     ...(filters.minPrice && { minPrice: filters.minPrice }),
     ...(filters.maxPrice && { maxPrice: filters.maxPrice }),
+    ...(filters.minRating && { minRating: Number(filters.minRating) }),
   }
 
   const { data, isLoading, isError } = useProducts(apiParams)
@@ -89,6 +92,7 @@ export function ProductsContainer() {
     filters.categoryId ||
     filters.minPrice ||
     filters.maxPrice ||
+    filters.minRating ||
     filters.sortBy !== DEFAULT_FILTERS.sortBy ||
     filters.sortOrder !== DEFAULT_FILTERS.sortOrder
 

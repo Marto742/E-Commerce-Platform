@@ -35,6 +35,12 @@ export function ActiveFilters({ filters, defaults, onChange, onClearAll }: Activ
           : `Up to $${filters.maxPrice}`
     chips.push({ label, onRemove: () => onChange({ minPrice: '', maxPrice: '', page: 1 }) })
   }
+  if (filters.minRating) {
+    chips.push({
+      label: `${filters.minRating}★ & up`,
+      onRemove: () => onChange({ minRating: '', page: 1 }),
+    })
+  }
   if (filters.sortBy !== defaults.sortBy || filters.sortOrder !== defaults.sortOrder) {
     const sortLabels: Record<string, string> = {
       'createdAt:asc': 'Oldest first',

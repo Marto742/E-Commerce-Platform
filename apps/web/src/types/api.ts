@@ -70,5 +70,6 @@ export interface Product {
 }
 
 export interface ProductListItem extends Omit<Product, 'description'> {
+  avgRating: number | null
   _count: { variants: number; reviews: number }
 }

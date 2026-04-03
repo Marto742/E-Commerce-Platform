@@ -27,6 +27,7 @@ export async function listProducts(query: ProductQueryInput) {
     categoryId,
     minPrice,
     maxPrice,
+    minRating,
     sortBy = 'createdAt',
     sortOrder = 'desc',
   } = query
@@ -47,6 +48,11 @@ export async function listProducts(query: ProductQueryInput) {
         ...(maxPrice && { lte: maxPrice }),
       },
     }),
+    // Filter to products that have at least one review meeting the minimum
+    // rating, then the avgRating check below refines to true averages.
+    ...(minRating && {
+      reviews: { some: { rating: { gte: minRating } } },
+    }),
   }
 
   const [products, total] = await prisma.$transaction([
@@ -64,7 +70,32 @@ export async function listProducts(query: ProductQueryInput) {
     prisma.product.count({ where }),
   ])
 
-  return { products, meta: buildPaginationMeta(total, page, limit) }
+  // Attach average rating to each product via a single groupBy query
+  const productIds = products.map((p) => p.id)
+  const avgRatings =
+    productIds.length > 0
+      ? await prisma.review.groupBy({
+          by: ['productId'],
+          where: { productId: { in: productIds } },
+          _avg: { rating: true },
+        })
+      : []
+
+  const avgRatingMap = new Map(avgRatings.map((r) => [r.productId, r._avg.rating]))
+
+  const productsWithRating = products.map((p) => ({
+    ...p,
+    avgRating: avgRatingMap.get(p.id) ?? null,
+  }))
+
+  // If minRating is set, post-filter to true average (the `some` filter above
+  // is a pre-filter; this ensures the average itself meets the threshold)
+  const filtered =
+    minRating != null
+      ? productsWithRating.filter((p) => p.avgRating != null && p.avgRating >= minRating)
+      : productsWithRating
+
+  return { products: filtered, meta: buildPaginationMeta(total, page, limit) }
 }
 
 export async function getProductById(id: string) {
