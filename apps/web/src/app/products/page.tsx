@@ -4,9 +4,27 @@ import { ProductsContainer } from '@/components/products/products-container'
 import { ProductCardSkeleton } from '@/components/product/product-card'
 import { Breadcrumbs } from '@/components/ui/breadcrumbs'
 
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
+
 export const metadata: Metadata = {
   title: 'All Products',
-  description: 'Browse our full product catalogue.',
+  description:
+    'Browse thousands of products across every category. Filter by price, rating, and more.',
+  openGraph: {
+    title: 'All Products | ShopName',
+    description:
+      'Browse thousands of products across every category. Filter by price, rating, and more.',
+    url: `${APP_URL}/products`,
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary',
+    title: 'All Products | ShopName',
+    description: 'Browse thousands of products across every category.',
+  },
+  alternates: {
+    canonical: `${APP_URL}/products`,
+  },
 }
 
 function ProductsLoadingFallback() {
