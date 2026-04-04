@@ -6,6 +6,7 @@ import { Navbar } from '@/components/layout/navbar'
 import { Footer } from '@/components/layout/footer'
 import { CartDrawerProvider } from '@/components/cart/cart-drawer-context'
 import { CartDrawer } from '@/components/cart/cart-drawer'
+import { SessionProvider } from '@/components/providers/session-provider'
 import { Devtools } from './devtools'
 import './globals.css'
 
@@ -70,17 +71,19 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.variable} font-sans antialiased`}>
-        <QueryProvider>
-          <CartProvider>
-            <CartDrawerProvider>
-              <Navbar />
-              {children}
-              <Footer />
-              <CartDrawer />
-            </CartDrawerProvider>
-          </CartProvider>
-          {process.env.NODE_ENV !== 'production' && <Devtools />}
-        </QueryProvider>
+        <SessionProvider>
+          <QueryProvider>
+            <CartProvider>
+              <CartDrawerProvider>
+                <Navbar />
+                {children}
+                <Footer />
+                <CartDrawer />
+              </CartDrawerProvider>
+            </CartProvider>
+            {process.env.NODE_ENV !== 'production' && <Devtools />}
+          </QueryProvider>
+        </SessionProvider>
       </body>
     </html>
   )

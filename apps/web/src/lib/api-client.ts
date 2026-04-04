@@ -19,11 +19,13 @@ interface FetchOptions extends Omit<RequestInit, 'body'> {
   body?: unknown
   /** Query-string params appended to the URL */
   params?: Record<string, string | number | boolean | undefined | null>
+  /** Bearer token forwarded from the NextAuth session */
+  accessToken?: string
 }
 
 export async function apiFetch<T>(
   path: string,
-  { body, params, headers, ...init }: FetchOptions = {}
+  { body, params, headers, accessToken, ...init }: FetchOptions = {}
 ): Promise<T> {
   const url = new URL(`${API_BASE}${path}`)
 
@@ -39,6 +41,7 @@ export async function apiFetch<T>(
     ...init,
     headers: {
       'Content-Type': 'application/json',
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
       ...headers,
     },
     body: body !== undefined ? JSON.stringify(body) : undefined,

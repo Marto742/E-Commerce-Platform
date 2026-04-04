@@ -11,6 +11,7 @@ import wishlistRouter from '@/modules/wishlist/wishlist.routes'
 import paymentsRouter from '@/modules/payments/payments.routes'
 import couponsRouter from '@/modules/coupons/coupons.routes'
 import shippingRouter from '@/modules/shipping/shipping.routes'
+import authRouter from '@/modules/auth/auth.routes'
 
 const router: Router = Router()
 
@@ -21,7 +22,7 @@ router.use('/health', healthRouter)
 router.use('/', docsRouter)
 
 // ── Auth ──────────────────────────────────────────────────
-// router.use('/auth', authRouter)          // Phase 3
+router.use('/auth', authRouter)
 
 // ── Users ─────────────────────────────────────────────────
 // router.use('/users', usersRouter)        // Phase 3
