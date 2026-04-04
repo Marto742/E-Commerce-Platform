@@ -1,6 +1,6 @@
 import { Router } from 'express'
 import { validate } from '@/middleware/validate'
-import { writeLimiter } from '@/middleware/rateLimiter'
+import { writeLimiter, searchLimiter } from '@/middleware/rateLimiter'
 import { createPaymentIntentSchema, guestCreatePaymentIntentSchema } from '@repo/validation'
 import * as controller from './payments.controller'
 
@@ -18,5 +18,8 @@ router.post(
   validate(guestCreatePaymentIntentSchema),
   controller.createGuestIntent
 )
+
+// GET /payments/status/:orderId — check order + PI status after 3DS redirect
+router.get('/status/:orderId', searchLimiter, controller.getStatus)
 
 export default router

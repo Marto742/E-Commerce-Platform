@@ -23,6 +23,20 @@ export const createGuestIntent: RequestHandler = async (req, res, next) => {
   }
 }
 
+export const getStatus: RequestHandler = async (req, res, next) => {
+  try {
+    if (!req.user?.id) throw AppError.unauthorized()
+    const result = await paymentsService.getPaymentStatus(
+      req.params['orderId']!,
+      req.user.id,
+      req.user.role === 'ADMIN'
+    )
+    sendSuccess(res, result)
+  } catch (err) {
+    next(err)
+  }
+}
+
 export const webhook: RequestHandler = async (req, res, next) => {
   try {
     const signature = req.headers['stripe-signature']

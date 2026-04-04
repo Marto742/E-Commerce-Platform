@@ -14,7 +14,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { prisma } from '@/lib/prisma'
 import { stripe } from '@/lib/stripe'
-import { createPaymentIntent, createGuestPaymentIntent } from './payments.service'
+import { createPaymentIntent, createGuestPaymentIntent, getPaymentStatus } from './payments.service'
 
 // ─── Mocks ────────────────────────────────────────────────────────────────────
 
@@ -29,7 +29,7 @@ vi.mock('@/lib/prisma', () => ({
 
 vi.mock('@/lib/stripe', () => ({
   stripe: {
-    paymentIntents: { create: vi.fn() },
+    paymentIntents: { create: vi.fn(), retrieve: vi.fn() },
   },
 }))
 
@@ -295,5 +295,96 @@ describe('createGuestPaymentIntent — guest (no account)', () => {
       code: 'INSUFFICIENT_STOCK',
     })
     expect(stripe.paymentIntents.create).not.toHaveBeenCalled()
+  })
+})
+
+// ─── getPaymentStatus (SCA redirect) ─────────────────────────────────────────
+
+describe('getPaymentStatus', () => {
+  const baseOrder = {
+    id: 'order-1',
+    status: 'PENDING',
+    userId: 'user-1',
+    stripePaymentIntentId: 'pi_test_123',
+  }
+
+  it('returns orderStatus and paymentIntentStatus for owner', async () => {
+    vi.mocked(prisma.order.findUnique).mockResolvedValue(baseOrder as never)
+    vi.mocked(stripe.paymentIntents.retrieve).mockResolvedValue({
+      id: 'pi_test_123',
+      status: 'requires_action',
+      client_secret: 'pi_test_123_secret',
+    } as never)
+
+    const result = await getPaymentStatus('order-1', 'user-1', false)
+
+    expect(result).toMatchObject({
+      orderId: 'order-1',
+      orderStatus: 'PENDING',
+      paymentIntentStatus: 'requires_action',
+      requiresAction: true,
+    })
+  })
+
+  it('sets requiresAction false when PI status is succeeded', async () => {
+    vi.mocked(prisma.order.findUnique).mockResolvedValue(baseOrder as never)
+    vi.mocked(stripe.paymentIntents.retrieve).mockResolvedValue({
+      id: 'pi_test_123',
+      status: 'succeeded',
+      client_secret: null,
+    } as never)
+
+    const result = await getPaymentStatus('order-1', 'user-1', false)
+
+    expect(result.requiresAction).toBe(false)
+    expect(result.paymentIntentStatus).toBe('succeeded')
+  })
+
+  it('allows admin to query any order', async () => {
+    vi.mocked(prisma.order.findUnique).mockResolvedValue({
+      ...baseOrder,
+      userId: 'other-user',
+    } as never)
+    vi.mocked(stripe.paymentIntents.retrieve).mockResolvedValue({
+      id: 'pi_test_123',
+      status: 'succeeded',
+      client_secret: null,
+    } as never)
+
+    await expect(getPaymentStatus('order-1', 'admin-id', true)).resolves.toMatchObject({
+      orderId: 'order-1',
+    })
+  })
+
+  it("throws 403 when non-owner requests another user's order", async () => {
+    vi.mocked(prisma.order.findUnique).mockResolvedValue({
+      ...baseOrder,
+      userId: 'other-user',
+    } as never)
+
+    await expect(getPaymentStatus('order-1', 'user-1', false)).rejects.toMatchObject({
+      statusCode: 403,
+    })
+  })
+
+  it('throws 404 when order does not exist', async () => {
+    vi.mocked(prisma.order.findUnique).mockResolvedValue(null)
+
+    await expect(getPaymentStatus('missing', 'user-1', false)).rejects.toMatchObject({
+      statusCode: 404,
+    })
+  })
+
+  it('returns null paymentIntentStatus when no PI attached', async () => {
+    vi.mocked(prisma.order.findUnique).mockResolvedValue({
+      ...baseOrder,
+      stripePaymentIntentId: null,
+    } as never)
+
+    const result = await getPaymentStatus('order-1', 'user-1', false)
+
+    expect(result.paymentIntentStatus).toBeNull()
+    expect(result.requiresAction).toBe(false)
+    expect(stripe.paymentIntents.retrieve).not.toHaveBeenCalled()
   })
 })

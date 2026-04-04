@@ -15,6 +15,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { prisma } from '@/lib/prisma'
 import { stripe } from '@/lib/stripe'
 import * as emailLib from '@/lib/emails/order-confirmation'
+import * as actionEmailLib from '@/lib/emails/payment-action-required'
 import { handleWebhookEvent } from './webhook.service'
 
 // ─── Mocks ────────────────────────────────────────────────────────────────────
@@ -36,6 +37,10 @@ vi.mock('@/lib/stripe', () => ({
 
 vi.mock('@/lib/emails/order-confirmation', () => ({
   sendOrderConfirmationEmail: vi.fn().mockResolvedValue(undefined),
+}))
+
+vi.mock('@/lib/emails/payment-action-required', () => ({
+  sendPaymentActionRequiredEmail: vi.fn().mockResolvedValue(undefined),
 }))
 
 vi.mock('@/config/env', () => ({
@@ -343,6 +348,106 @@ describe('signature verification', () => {
     await expect(handleWebhookEvent(RAW_BODY, 'wrong-secret')).rejects.toThrow(
       'Webhook signature verification failed'
     )
+  })
+})
+
+// ─── payment_intent.requires_action (SCA — test card 4000 0025 0000 3155) ─────
+
+describe('payment_intent.requires_action — 3DS authentication required', () => {
+  it('keeps order PENDING and sends action-required email to user', async () => {
+    setupWebhookEvent('payment_intent.requires_action', { orderId: 'order-1' })
+    vi.mocked(prisma.order.findUnique).mockResolvedValue(makeOrder() as never)
+
+    await handleWebhookEvent(RAW_BODY, VALID_SIG)
+    await new Promise((r) => setTimeout(r, 0))
+
+    // Order must NOT be modified — stays PENDING
+    expect(prisma.$transaction).not.toHaveBeenCalled()
+    expect(actionEmailLib.sendPaymentActionRequiredEmail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        orderId: 'order-1',
+        customerEmail: 'user@example.com',
+        customerName: 'John Doe',
+      })
+    )
+  })
+
+  it('sends action-required email to guest using guestEmail', async () => {
+    setupWebhookEvent('payment_intent.requires_action', {
+      orderId: 'order-1',
+      guestName: 'Jane Doe',
+    })
+    const guestOrder = makeOrder({ userId: null, guestEmail: 'guest@example.com', user: null })
+    vi.mocked(prisma.order.findUnique).mockResolvedValue(guestOrder as never)
+
+    await handleWebhookEvent(RAW_BODY, VALID_SIG)
+    await new Promise((r) => setTimeout(r, 0))
+
+    expect(actionEmailLib.sendPaymentActionRequiredEmail).toHaveBeenCalledWith(
+      expect.objectContaining({ customerEmail: 'guest@example.com', customerName: 'Jane Doe' })
+    )
+  })
+
+  it('skips when order is not PENDING (already processed — idempotency)', async () => {
+    setupWebhookEvent('payment_intent.requires_action', { orderId: 'order-1' })
+    vi.mocked(prisma.order.findUnique).mockResolvedValue(
+      makeOrder({ status: 'CONFIRMED' }) as never
+    )
+
+    await handleWebhookEvent(RAW_BODY, VALID_SIG)
+    await new Promise((r) => setTimeout(r, 0))
+
+    expect(actionEmailLib.sendPaymentActionRequiredEmail).not.toHaveBeenCalled()
+  })
+
+  it('skips email when order has no email address', async () => {
+    setupWebhookEvent('payment_intent.requires_action', { orderId: 'order-1' })
+    vi.mocked(prisma.order.findUnique).mockResolvedValue(
+      makeOrder({ userId: null, guestEmail: null, user: null }) as never
+    )
+
+    await handleWebhookEvent(RAW_BODY, VALID_SIG)
+    await new Promise((r) => setTimeout(r, 0))
+
+    expect(actionEmailLib.sendPaymentActionRequiredEmail).not.toHaveBeenCalled()
+  })
+
+  it('skips gracefully when orderId is missing from metadata', async () => {
+    setupWebhookEvent('payment_intent.requires_action', {})
+    await expect(handleWebhookEvent(RAW_BODY, VALID_SIG)).resolves.toBeUndefined()
+    expect(prisma.order.findUnique).not.toHaveBeenCalled()
+  })
+})
+
+// ─── payment_intent.canceled (PI expired after 3DS timeout) ──────────────────
+
+describe('payment_intent.canceled — PI expired or voided', () => {
+  it('cancels a PENDING order', async () => {
+    setupWebhookEvent('payment_intent.canceled', { orderId: 'order-1' })
+    const order = makeOrder({ couponCode: null })
+    vi.mocked(prisma.order.findUnique).mockResolvedValue(order as never)
+    vi.mocked(prisma.$transaction).mockImplementation(async (cb: (tx: never) => unknown) => {
+      const tx = {
+        coupon: { update: vi.fn() },
+        order: { update: vi.fn().mockResolvedValue({ ...order, status: 'CANCELLED' }) },
+      }
+      return cb(tx as never)
+    })
+
+    await handleWebhookEvent(RAW_BODY, VALID_SIG)
+
+    expect(prisma.$transaction).toHaveBeenCalledOnce()
+  })
+
+  it('is idempotent — skips already CANCELLED order', async () => {
+    setupWebhookEvent('payment_intent.canceled', { orderId: 'order-1' })
+    vi.mocked(prisma.order.findUnique).mockResolvedValue(
+      makeOrder({ status: 'CANCELLED' }) as never
+    )
+
+    await handleWebhookEvent(RAW_BODY, VALID_SIG)
+
+    expect(prisma.$transaction).not.toHaveBeenCalled()
   })
 })
 

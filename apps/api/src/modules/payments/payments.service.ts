@@ -150,13 +150,15 @@ async function persistOrder(data: {
 async function attachPaymentIntent(
   order: { id: string },
   totalInCents: number,
-  metadata: Record<string, string>
+  metadata: Record<string, string>,
+  returnUrl?: string
 ) {
   const paymentIntent = await stripe.paymentIntents.create({
     amount: totalInCents,
     currency: 'usd',
     metadata,
     automatic_payment_methods: { enabled: true },
+    ...(returnUrl ? { return_url: returnUrl } : {}),
   })
 
   await prisma.order.update({
@@ -192,10 +194,33 @@ function formatResult(
   }
 }
 
+// ─── Payment status (SCA redirect) ───────────────────────────────────────────
+
+export async function getPaymentStatus(orderId: string, userId: string, isAdmin: boolean) {
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    select: { id: true, status: true, userId: true, stripePaymentIntentId: true },
+  })
+
+  if (!order) throw AppError.notFound('Order not found')
+  if (!isAdmin && order.userId !== userId) throw AppError.forbidden()
+
+  let paymentIntentStatus: string | null = null
+  let requiresAction = false
+
+  if (order.stripePaymentIntentId) {
+    const pi = await stripe.paymentIntents.retrieve(order.stripePaymentIntentId)
+    paymentIntentStatus = pi.status
+    requiresAction = pi.status === 'requires_action'
+  }
+
+  return { orderId: order.id, orderStatus: order.status, paymentIntentStatus, requiresAction }
+}
+
 // ─── Authenticated checkout ───────────────────────────────────────────────────
 
 export async function createPaymentIntent(userId: string, data: CreatePaymentIntentInput) {
-  const { items, shippingAddress, billingAddress, couponCode, shippingMethod } = data
+  const { items, shippingAddress, billingAddress, couponCode, shippingMethod, returnUrl } = data
 
   const { subtotal, orderItemsData } = await resolveCartItems(items)
   const { discountAmount, appliedCoupon } = await resolveCoupon(couponCode, subtotal)
@@ -222,10 +247,12 @@ export async function createPaymentIntent(userId: string, data: CreatePaymentInt
     orderItemsData,
   })
 
-  const paymentIntent = await attachPaymentIntent(order, totalInCents, {
-    orderId: order.id,
-    userId,
-  })
+  const paymentIntent = await attachPaymentIntent(
+    order,
+    totalInCents,
+    { orderId: order.id, userId },
+    returnUrl
+  )
 
   return formatResult(
     paymentIntent,
@@ -248,6 +275,7 @@ export async function createGuestPaymentIntent(data: GuestCreatePaymentIntentInp
     billingAddress,
     couponCode,
     shippingMethod,
+    returnUrl,
     email,
     firstName,
     lastName,
@@ -278,11 +306,12 @@ export async function createGuestPaymentIntent(data: GuestCreatePaymentIntentInp
     orderItemsData,
   })
 
-  const paymentIntent = await attachPaymentIntent(order, totalInCents, {
-    orderId: order.id,
-    guestEmail: email,
-    guestName: `${firstName} ${lastName}`.trim(),
-  })
+  const paymentIntent = await attachPaymentIntent(
+    order,
+    totalInCents,
+    { orderId: order.id, guestEmail: email, guestName: `${firstName} ${lastName}`.trim() },
+    returnUrl
+  )
 
   return formatResult(
     paymentIntent,

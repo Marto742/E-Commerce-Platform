@@ -3,6 +3,7 @@ import { stripe } from '@/lib/stripe'
 import { env } from '@/config/env'
 import { logger } from '@/lib/logger'
 import { sendOrderConfirmationEmail } from '@/lib/emails/order-confirmation'
+import { sendPaymentActionRequiredEmail } from '@/lib/emails/payment-action-required'
 
 interface PaymentIntentEventObject {
   id: string
@@ -120,6 +121,52 @@ async function confirmOrder(pi: PaymentIntentEventObject): Promise<void> {
   })
 }
 
+async function notifyActionRequired(pi: PaymentIntentEventObject): Promise<void> {
+  const { orderId } = pi.metadata
+
+  if (!orderId) {
+    logger.warn('payment_intent.requires_action missing orderId in metadata', {
+      paymentIntentId: pi.id,
+    })
+    return
+  }
+
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    include: { user: true },
+  })
+
+  if (!order) {
+    logger.warn('Order not found for requires_action event', { orderId, paymentIntentId: pi.id })
+    return
+  }
+  if (order.status !== 'PENDING') {
+    logger.info('Order not PENDING for requires_action — skipping', {
+      orderId,
+      status: order.status,
+    })
+    return
+  }
+
+  logger.info('Payment requires 3D Secure authentication', { orderId, paymentIntentId: pi.id })
+
+  const customerEmail = order.user?.email ?? order.guestEmail
+  if (!customerEmail) return
+
+  const customerName = order.user
+    ? `${order.user.firstName} ${order.user.lastName}`.trim() || undefined
+    : (pi.metadata['guestName'] ?? undefined)
+
+  sendPaymentActionRequiredEmail({ orderId: order.id, customerEmail, customerName }).catch(
+    (err: unknown) => {
+      logger.error('Failed to send payment action required email', {
+        orderId,
+        error: err instanceof Error ? err.message : String(err),
+      })
+    }
+  )
+}
+
 async function cancelOrder(pi: PaymentIntentEventObject): Promise<void> {
   const { orderId } = pi.metadata
 
@@ -180,7 +227,11 @@ export async function handleWebhookEvent(rawBody: Buffer, signature: string): Pr
     case 'payment_intent.succeeded':
       await confirmOrder(pi)
       break
+    case 'payment_intent.requires_action':
+      await notifyActionRequired(pi)
+      break
     case 'payment_intent.payment_failed':
+    case 'payment_intent.canceled':
       await cancelOrder(pi)
       break
     default:

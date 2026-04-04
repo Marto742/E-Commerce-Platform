@@ -9,6 +9,11 @@ export interface StripeClient {
       id: string
       client_secret: string | null
     }>
+    retrieve: (id: string) => Promise<{
+      id: string
+      status: string
+      client_secret: string | null
+    }>
   }
   webhooks: {
     constructEventAsync: (

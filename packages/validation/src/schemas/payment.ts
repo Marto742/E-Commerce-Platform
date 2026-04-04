@@ -69,6 +69,7 @@ export const createPaymentIntentSchema = z.object({
   billingAddress: addressSchema.optional(),
   couponCode: z.string().optional(),
   shippingMethod: z.enum(['STANDARD', 'EXPRESS', 'OVERNIGHT']).default('STANDARD'),
+  returnUrl: z.string().url().optional(),
 })
 
 export type CreatePaymentIntentInput = z.infer<typeof createPaymentIntentSchema>
