@@ -64,6 +64,10 @@ export type { InventoryQueryInput, LowStockQueryInput } from './schemas/inventor
 export { addToWishlistSchema } from './schemas/wishlist'
 export type { AddToWishlistInput } from './schemas/wishlist'
 
+// Payment
+export { createPaymentIntentSchema } from './schemas/payment'
+export type { CreatePaymentIntentInput } from './schemas/payment'
+
 // Common
 export {
   paginationSchema,

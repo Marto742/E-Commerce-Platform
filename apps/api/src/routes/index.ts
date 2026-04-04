@@ -8,6 +8,7 @@ import ordersRouter from '@/modules/orders/orders.routes'
 import inventoryRouter from '@/modules/inventory/inventory.routes'
 import reviewsRouter from '@/modules/reviews/reviews.routes'
 import wishlistRouter from '@/modules/wishlist/wishlist.routes'
+import paymentsRouter from '@/modules/payments/payments.routes'
 
 const router: Router = Router()
 
@@ -35,7 +36,7 @@ router.use('/cart', cartRouter)
 router.use('/orders', ordersRouter)
 
 // ── Payments ──────────────────────────────────────────────
-// router.use('/payments', paymentsRouter)  // Phase 5
+router.use('/payments', paymentsRouter)
 
 // ── Uploads ───────────────────────────────────────────────
 // router.use('/uploads', uploadsRouter)    // Phase 9
