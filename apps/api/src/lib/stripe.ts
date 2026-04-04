@@ -27,7 +27,7 @@ if (!env.STRIPE_SECRET_KEY) {
   throw new Error('STRIPE_SECRET_KEY is required for payment features')
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-require-imports
 const stripeFactory: any = require('stripe')
 
 export const stripe: StripeClient = stripeFactory(env.STRIPE_SECRET_KEY, {
