@@ -55,6 +55,17 @@ const mockUser = {
   avatarUrl: null,
 }
 
+// What prisma.user.create returns after the select (no passwordHash)
+const mockUserPublic = {
+  id: 'user-1',
+  email: 'test@example.com',
+  firstName: 'John',
+  lastName: 'Doe',
+  role: 'CUSTOMER',
+  status: 'ACTIVE',
+  avatarUrl: null,
+}
+
 beforeEach(() => {
   vi.clearAllMocks()
 })
@@ -64,7 +75,7 @@ beforeEach(() => {
 describe('register', () => {
   it('creates a new user and returns public fields', async () => {
     vi.mocked(prisma.user.findUnique).mockResolvedValue(null)
-    vi.mocked(prisma.user.create).mockResolvedValue(mockUser as never)
+    vi.mocked(prisma.user.create).mockResolvedValue(mockUserPublic as never)
 
     const result = await register({
       email: 'test@example.com',
@@ -80,7 +91,7 @@ describe('register', () => {
 
   it('lowercases the email before saving', async () => {
     vi.mocked(prisma.user.findUnique).mockResolvedValue(null)
-    vi.mocked(prisma.user.create).mockResolvedValue(mockUser as never)
+    vi.mocked(prisma.user.create).mockResolvedValue(mockUserPublic as never)
 
     await register({
       email: 'TEST@Example.COM',
