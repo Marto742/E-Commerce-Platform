@@ -9,6 +9,7 @@ import { useCart } from '@/store/cart'
 import { api } from '@/lib/api-client'
 import { AddressForm } from './address-form'
 import { OrderSummary } from './order-summary'
+import { saveOrderSnapshot } from '@/lib/order-snapshot'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -98,7 +99,21 @@ export function CheckoutForm() {
       }
 
       const res = await api.post<PaymentIntentResponse>('/payments/intent', payload)
-      const { clientSecret, orderId } = res.data
+      const { clientSecret, orderId, breakdown } = res.data
+
+      saveOrderSnapshot({
+        orderId,
+        items: items.map((item) => ({
+          name: item.variant.product.name,
+          variantName: item.variant.name,
+          imageUrl: item.variant.product.imageUrl,
+          quantity: item.quantity,
+          unitPrice: parseFloat(item.variant.price),
+        })),
+        shippingAddress: values.shippingAddress,
+        breakdown,
+        couponCode,
+      })
 
       router.push(
         `/checkout/payment?clientSecret=${encodeURIComponent(clientSecret)}&orderId=${orderId}`
