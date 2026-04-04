@@ -1,7 +1,8 @@
 import type { RequestHandler } from 'express'
 import { AppError } from '@/utils/AppError'
-import { sendCreated } from '@/utils/response'
+import { sendSuccess, sendCreated } from '@/utils/response'
 import * as paymentsService from './payments.service'
+import * as webhookService from './webhook.service'
 
 export const createIntent: RequestHandler = async (req, res, next) => {
   try {
@@ -9,6 +10,25 @@ export const createIntent: RequestHandler = async (req, res, next) => {
     const result = await paymentsService.createPaymentIntent(req.user.id, req.body)
     sendCreated(res, result)
   } catch (err) {
+    next(err)
+  }
+}
+
+export const webhook: RequestHandler = async (req, res, next) => {
+  try {
+    const signature = req.headers['stripe-signature']
+    if (!signature || typeof signature !== 'string') {
+      res.status(400).json({ error: 'Missing stripe-signature header' })
+      return
+    }
+
+    await webhookService.handleWebhookEvent(req.body as Buffer, signature)
+    sendSuccess(res, { received: true })
+  } catch (err) {
+    // 400 for signature failures (don't retry), 500 for unexpected errors (Stripe will retry)
+    const message = err instanceof Error ? err.message : 'Webhook error'
+    const status = message.includes('signature') ? 400 : 500
+    res.status(status).json({ error: message })
     next(err)
   }
 }

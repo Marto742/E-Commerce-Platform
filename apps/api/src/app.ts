@@ -8,6 +8,7 @@ import { errorHandler } from '@/middleware/error'
 import { requestId } from '@/middleware/requestId'
 import { requestLogger } from '@/middleware/requestLogger'
 import { globalLimiter } from '@/middleware/rateLimiter'
+import * as webhookController from '@/modules/payments/payments.controller'
 
 export function createApp(): Application {
   const app = express()
@@ -29,6 +30,14 @@ export function createApp(): Application {
       methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
       allowedHeaders: ['Content-Type', 'Authorization', 'X-Session-ID'],
     })
+  )
+
+  // ── Stripe webhook — raw body required for signature verification ──
+  // Must be registered BEFORE express.json() consumes the stream.
+  app.post(
+    '/v1/payments/webhook',
+    express.raw({ type: 'application/json' }),
+    webhookController.webhook
   )
 
   // ── Body parsing ────────────────────────────────────────
