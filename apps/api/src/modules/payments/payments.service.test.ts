@@ -22,7 +22,7 @@ vi.mock('@/lib/prisma', () => ({
   prisma: {
     productVariant: { findMany: vi.fn() },
     coupon: { findUnique: vi.fn(), update: vi.fn() },
-    order: { create: vi.fn(), update: vi.fn() },
+    order: { create: vi.fn(), update: vi.fn(), findUnique: vi.fn() },
     $transaction: vi.fn(),
   },
 }))
