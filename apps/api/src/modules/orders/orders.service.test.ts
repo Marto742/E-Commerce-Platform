@@ -321,20 +321,6 @@ describe('updateOrderStatus', () => {
 // ─── cancelOrder ─────────────────────────────────────────────────────────────
 
 describe('cancelOrder', () => {
-  function makeTx(cancelledOrder: object) {
-    return vi.mocked(prisma.$transaction).mockImplementation(async (cb: unknown) => {
-      if (typeof cb === 'function') {
-        const tx = {
-          productVariant: { update: vi.fn().mockResolvedValue({}) },
-          coupon: { update: vi.fn().mockResolvedValue({}) },
-          order: { update: vi.fn().mockResolvedValue(cancelledOrder) },
-        }
-        return cb(tx)
-      }
-      return cb
-    })
-  }
-
   it('cancels a PENDING order without restoring stock (payment never collected)', async () => {
     const orderWithItems = {
       ...mockOrder,
