@@ -108,8 +108,7 @@ describe('payment_intent.succeeded — card 4242', () => {
 
     const order = makeOrder()
     vi.mocked(prisma.order.findUnique).mockResolvedValue(order as never)
-    vi.mocked(prisma.$transaction).mockImplementation(async (cb: unknown) => {
-      if (typeof cb !== 'function') return cb
+    vi.mocked(prisma.$transaction).mockImplementation(async (cb: (tx: never) => unknown) => {
       const tx = {
         productVariant: {
           findUnique: vi.fn().mockResolvedValue({ id: 'var-1', sku: 'SKU-001', stock: 5 }),
@@ -117,7 +116,7 @@ describe('payment_intent.succeeded — card 4242', () => {
         },
         order: { update: vi.fn().mockResolvedValue({ ...order, status: 'CONFIRMED' }) },
       }
-      return tx.order.update ? cb(tx) : cb
+      return cb(tx as never)
     })
 
     await handleWebhookEvent(RAW_BODY, VALID_SIG)
@@ -128,8 +127,7 @@ describe('payment_intent.succeeded — card 4242', () => {
   it('sends confirmation email to authenticated user', async () => {
     setupWebhookEvent('payment_intent.succeeded', { orderId: 'order-1' })
     vi.mocked(prisma.order.findUnique).mockResolvedValue(makeOrder() as never)
-    vi.mocked(prisma.$transaction).mockImplementation(async (cb: unknown) => {
-      if (typeof cb !== 'function') return cb
+    vi.mocked(prisma.$transaction).mockImplementation(async (cb: (tx: never) => unknown) => {
       const tx = {
         productVariant: {
           findUnique: vi.fn().mockResolvedValue({ id: 'var-1', sku: 'SKU-001', stock: 5 }),
@@ -137,7 +135,7 @@ describe('payment_intent.succeeded — card 4242', () => {
         },
         order: { update: vi.fn().mockResolvedValue({}) },
       }
-      return cb(tx)
+      return cb(tx as never)
     })
 
     await handleWebhookEvent(RAW_BODY, VALID_SIG)
@@ -157,8 +155,7 @@ describe('payment_intent.succeeded — card 4242', () => {
     })
     const guestOrder = makeOrder({ userId: null, guestEmail: 'guest@example.com', user: null })
     vi.mocked(prisma.order.findUnique).mockResolvedValue(guestOrder as never)
-    vi.mocked(prisma.$transaction).mockImplementation(async (cb: unknown) => {
-      if (typeof cb !== 'function') return cb
+    vi.mocked(prisma.$transaction).mockImplementation(async (cb: (tx: never) => unknown) => {
       const tx = {
         productVariant: {
           findUnique: vi.fn().mockResolvedValue({ id: 'var-1', sku: 'SKU-001', stock: 5 }),
@@ -166,7 +163,7 @@ describe('payment_intent.succeeded — card 4242', () => {
         },
         order: { update: vi.fn().mockResolvedValue({}) },
       }
-      return cb(tx)
+      return cb(tx as never)
     })
 
     await handleWebhookEvent(RAW_BODY, VALID_SIG)
@@ -220,8 +217,7 @@ describe('payment_intent.succeeded — card 4242', () => {
     setupWebhookEvent('payment_intent.succeeded', { orderId: 'order-1' })
     const noEmailOrder = makeOrder({ userId: null, guestEmail: null, user: null })
     vi.mocked(prisma.order.findUnique).mockResolvedValue(noEmailOrder as never)
-    vi.mocked(prisma.$transaction).mockImplementation(async (cb: unknown) => {
-      if (typeof cb !== 'function') return cb
+    vi.mocked(prisma.$transaction).mockImplementation(async (cb: (tx: never) => unknown) => {
       const tx = {
         productVariant: {
           findUnique: vi.fn().mockResolvedValue({ id: 'var-1', sku: 'SKU-001', stock: 5 }),
@@ -229,7 +225,7 @@ describe('payment_intent.succeeded — card 4242', () => {
         },
         order: { update: vi.fn().mockResolvedValue({}) },
       }
-      return cb(tx)
+      return cb(tx as never)
     })
 
     await handleWebhookEvent(RAW_BODY, VALID_SIG)
@@ -245,13 +241,12 @@ describe('payment_intent.payment_failed — card declined (4000 0000 0000 0002)'
     setupWebhookEvent('payment_intent.payment_failed', { orderId: 'order-1' })
     const order = makeOrder({ couponCode: null })
     vi.mocked(prisma.order.findUnique).mockResolvedValue(order as never)
-    vi.mocked(prisma.$transaction).mockImplementation(async (cb: unknown) => {
-      if (typeof cb !== 'function') return cb
+    vi.mocked(prisma.$transaction).mockImplementation(async (cb: (tx: never) => unknown) => {
       const tx = {
         coupon: { update: vi.fn() },
         order: { update: vi.fn().mockResolvedValue({ ...order, status: 'CANCELLED' }) },
       }
-      return cb(tx)
+      return cb(tx as never)
     })
 
     await handleWebhookEvent(RAW_BODY, VALID_SIG)
@@ -265,8 +260,7 @@ describe('payment_intent.payment_failed — card declined (4000 0000 0000 0002)'
     vi.mocked(prisma.order.findUnique).mockResolvedValue(order as never)
 
     let couponUpdateCalled = false
-    vi.mocked(prisma.$transaction).mockImplementation(async (cb: unknown) => {
-      if (typeof cb !== 'function') return cb
+    vi.mocked(prisma.$transaction).mockImplementation(async (cb: (tx: never) => unknown) => {
       const tx = {
         coupon: {
           update: vi.fn().mockImplementation(() => {
@@ -276,7 +270,7 @@ describe('payment_intent.payment_failed — card declined (4000 0000 0000 0002)'
         },
         order: { update: vi.fn().mockResolvedValue({ ...order, status: 'CANCELLED' }) },
       }
-      return cb(tx)
+      return cb(tx as never)
     })
 
     await handleWebhookEvent(RAW_BODY, VALID_SIG)
@@ -289,8 +283,7 @@ describe('payment_intent.payment_failed — card declined (4000 0000 0000 0002)'
     vi.mocked(prisma.order.findUnique).mockResolvedValue(makeOrder() as never)
 
     let variantUpdateCalled = false
-    vi.mocked(prisma.$transaction).mockImplementation(async (cb: unknown) => {
-      if (typeof cb !== 'function') return cb
+    vi.mocked(prisma.$transaction).mockImplementation(async (cb: (tx: never) => unknown) => {
       const tx = {
         coupon: { update: vi.fn() },
         order: { update: vi.fn().mockResolvedValue({}) },
@@ -301,7 +294,7 @@ describe('payment_intent.payment_failed — card declined (4000 0000 0000 0002)'
           }),
         },
       }
-      return cb(tx)
+      return cb(tx as never)
     })
 
     await handleWebhookEvent(RAW_BODY, VALID_SIG)

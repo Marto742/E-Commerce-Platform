@@ -82,15 +82,12 @@ const baseIntentInput = {
 
 function setupHappyPath() {
   vi.mocked(prisma.productVariant.findMany).mockResolvedValue([mockVariant] as never)
-  vi.mocked(prisma.$transaction).mockImplementation(async (cb: unknown) => {
-    if (typeof cb === 'function') {
-      return cb({
-        coupon: { update: vi.fn() },
-        order: { create: vi.fn().mockResolvedValue(mockOrder) },
-      })
-    }
-    return cb
-  })
+  vi.mocked(prisma.$transaction).mockImplementation(async (cb: (tx: never) => unknown) =>
+    cb({
+      coupon: { update: vi.fn() },
+      order: { create: vi.fn().mockResolvedValue(mockOrder) },
+    } as never)
+  )
   vi.mocked(stripe.paymentIntents.create).mockResolvedValue(mockPaymentIntent as never)
   vi.mocked(prisma.order.update).mockResolvedValue({
     ...mockOrder,
@@ -124,15 +121,12 @@ describe('createPaymentIntent — authenticated', () => {
   it('applies free STANDARD shipping when subtotal >= $75 (test card 4242, large order)', async () => {
     const bigVariant = { ...mockVariant, price: 80.0 }
     vi.mocked(prisma.productVariant.findMany).mockResolvedValue([bigVariant] as never)
-    vi.mocked(prisma.$transaction).mockImplementation(async (cb: unknown) => {
-      if (typeof cb === 'function') {
-        return cb({
-          coupon: { update: vi.fn() },
-          order: { create: vi.fn().mockResolvedValue(mockOrder) },
-        })
-      }
-      return cb
-    })
+    vi.mocked(prisma.$transaction).mockImplementation(async (cb: (tx: never) => unknown) =>
+      cb({
+        coupon: { update: vi.fn() },
+        order: { create: vi.fn().mockResolvedValue(mockOrder) },
+      } as never)
+    )
     vi.mocked(stripe.paymentIntents.create).mockResolvedValue(mockPaymentIntent as never)
     vi.mocked(prisma.order.update).mockResolvedValue(mockOrder as never)
 
@@ -188,15 +182,12 @@ describe('createPaymentIntent — authenticated', () => {
     }
     vi.mocked(prisma.productVariant.findMany).mockResolvedValue([mockVariant] as never)
     vi.mocked(prisma.coupon.findUnique).mockResolvedValue(coupon as never)
-    vi.mocked(prisma.$transaction).mockImplementation(async (cb: unknown) => {
-      if (typeof cb === 'function') {
-        return cb({
-          coupon: { update: vi.fn() },
-          order: { create: vi.fn().mockResolvedValue(mockOrder) },
-        })
-      }
-      return cb
-    })
+    vi.mocked(prisma.$transaction).mockImplementation(async (cb: (tx: never) => unknown) =>
+      cb({
+        coupon: { update: vi.fn() },
+        order: { create: vi.fn().mockResolvedValue(mockOrder) },
+      } as never)
+    )
     vi.mocked(stripe.paymentIntents.create).mockResolvedValue(mockPaymentIntent as never)
     vi.mocked(prisma.order.update).mockResolvedValue(mockOrder as never)
 
@@ -288,7 +279,7 @@ describe('createGuestPaymentIntent — guest (no account)', () => {
         coupon: { update: vi.fn() },
         order: { create: vi.fn().mockResolvedValue(mockOrder) },
       }
-      await txCall(txMock)
+      await txCall(txMock as never)
       const createArgs = txMock.order.create.mock.calls[0]?.[0] as { data: Record<string, unknown> }
       expect(createArgs.data['guestEmail']).toBe('guest@example.com')
       expect(createArgs.data['userId']).toBeNull()
