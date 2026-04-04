@@ -35,8 +35,46 @@ async function confirmOrder(pi: PaymentIntentEventObject): Promise<void> {
     return
   }
 
-  await prisma.order.update({ where: { id: orderId }, data: { status: 'CONFIRMED' } })
-  logger.info('Order confirmed via webhook', { orderId, paymentIntentId: pi.id })
+  // Deduct stock atomically. If any variant has gone out of stock since the
+  // order was placed, we still confirm (payment collected) but log a warning
+  // so ops can handle fulfilment manually.
+  await prisma.$transaction(async (tx) => {
+    for (const item of order.items) {
+      const variant = await tx.productVariant.findUnique({
+        where: { id: item.variantId },
+        select: { id: true, sku: true, stock: true },
+      })
+
+      if (!variant) {
+        logger.warn('Variant not found during inventory deduction', {
+          variantId: item.variantId,
+          orderId,
+        })
+        continue
+      }
+
+      if (variant.stock < item.quantity) {
+        logger.warn('Insufficient stock during inventory deduction — oversell detected', {
+          sku: variant.sku,
+          available: variant.stock,
+          required: item.quantity,
+          orderId,
+        })
+      }
+
+      await tx.productVariant.update({
+        where: { id: item.variantId },
+        data: { stock: { decrement: item.quantity } },
+      })
+    }
+
+    await tx.order.update({ where: { id: orderId }, data: { status: 'CONFIRMED' } })
+  })
+
+  logger.info('Order confirmed and inventory deducted via webhook', {
+    orderId,
+    paymentIntentId: pi.id,
+  })
 
   const addr = order.shippingAddress as {
     line1: string
@@ -82,10 +120,7 @@ async function cancelOrder(pi: PaymentIntentEventObject): Promise<void> {
     return
   }
 
-  const order = await prisma.order.findUnique({
-    where: { id: orderId },
-    include: { items: true },
-  })
+  const order = await prisma.order.findUnique({ where: { id: orderId } })
 
   if (!order) {
     logger.warn('Order not found for failed payment intent', { orderId })
@@ -96,13 +131,9 @@ async function cancelOrder(pi: PaymentIntentEventObject): Promise<void> {
     return
   }
 
+  // Stock was never decremented for PENDING orders (deduction only happens on
+  // payment_intent.succeeded), so there is nothing to restore here.
   await prisma.$transaction(async (tx) => {
-    for (const item of order.items) {
-      await tx.productVariant.update({
-        where: { id: item.variantId },
-        data: { stock: { increment: item.quantity } },
-      })
-    }
     if (order.couponCode) {
       await tx.coupon.update({
         where: { code: order.couponCode },

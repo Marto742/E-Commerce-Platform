@@ -168,14 +168,10 @@ export async function createOrder(userId: string, data: CreateOrderInput) {
   })
 
   // 6. Persist everything in a single transaction
+  // Note: stock is NOT decremented here — it is decremented atomically in the
+  // payment_intent.succeeded webhook (task 5.16). This prevents stock from
+  // being held against orders that never complete payment.
   return prisma.$transaction(async (tx) => {
-    for (const item of items) {
-      await tx.productVariant.update({
-        where: { id: item.variantId },
-        data: { stock: { decrement: item.quantity } },
-      })
-    }
-
     if (appliedCoupon) {
       await tx.coupon.update({
         where: { id: appliedCoupon.id },
@@ -214,13 +210,42 @@ const ALLOWED_TRANSITIONS: Record<string, string[]> = {
   REFUNDED: [],
 }
 
+// Orders whose stock has been decremented (i.e. payment was collected)
+const STOCK_HELD_STATUSES = new Set(['CONFIRMED', 'PROCESSING', 'SHIPPED'])
+
 export async function updateOrderStatus(id: string, status: string) {
-  const order = await prisma.order.findUnique({ where: { id } })
+  const order = await prisma.order.findUnique({
+    where: { id },
+    include: { items: true },
+  })
   if (!order) throw AppError.notFound('Order not found')
 
   const allowed = ALLOWED_TRANSITIONS[order.status] ?? []
   if (!allowed.includes(status)) {
     throw AppError.badRequest(`Cannot transition order from ${order.status} to ${status}`)
+  }
+
+  // Restore stock when admin cancels an order that had already been paid
+  if (status === 'CANCELLED' && STOCK_HELD_STATUSES.has(order.status)) {
+    return prisma.$transaction(async (tx) => {
+      for (const item of order.items) {
+        await tx.productVariant.update({
+          where: { id: item.variantId },
+          data: { stock: { increment: item.quantity } },
+        })
+      }
+      if (order.couponCode) {
+        await tx.coupon.update({
+          where: { code: order.couponCode },
+          data: { usesCount: { decrement: 1 } },
+        })
+      }
+      return tx.order.update({
+        where: { id },
+        data: { status: 'CANCELLED' },
+        include: ORDER_DETAIL_INCLUDE,
+      })
+    })
   }
 
   return prisma.order.update({
@@ -244,12 +269,15 @@ export async function cancelOrder(id: string, userId: string) {
   }
 
   return prisma.$transaction(async (tx) => {
-    // Restore stock
-    for (const item of order.items) {
-      await tx.productVariant.update({
-        where: { id: item.variantId },
-        data: { stock: { increment: item.quantity } },
-      })
+    // Stock was decremented by the payment webhook only for CONFIRMED orders.
+    // PENDING orders were never paid — no stock to restore.
+    if (order.status === 'CONFIRMED') {
+      for (const item of order.items) {
+        await tx.productVariant.update({
+          where: { id: item.variantId },
+          data: { stock: { increment: item.quantity } },
+        })
+      }
     }
 
     // Decrement coupon usage

@@ -285,12 +285,57 @@ describe('updateOrderStatus', () => {
       statusCode: 422,
     })
   })
+
+  it('restores stock when admin cancels a CONFIRMED order', async () => {
+    const confirmedOrder = {
+      ...mockOrder,
+      status: 'CONFIRMED',
+      couponCode: null,
+      items: [{ id: 'oi-1', variantId: 'var-1', quantity: 3 }],
+    }
+    vi.mocked(prisma.order.findUnique).mockResolvedValue(confirmedOrder as never)
+    let variantUpdateCalled = false
+    vi.mocked(prisma.$transaction).mockImplementation(async (cb: unknown) => {
+      if (typeof cb === 'function') {
+        const tx = {
+          productVariant: {
+            update: vi.fn().mockImplementation(() => {
+              variantUpdateCalled = true
+              return {}
+            }),
+          },
+          coupon: { update: vi.fn().mockResolvedValue({}) },
+          order: { update: vi.fn().mockResolvedValue({ ...confirmedOrder, status: 'CANCELLED' }) },
+        }
+        return cb(tx)
+      }
+      return cb
+    })
+
+    const result = await updateOrderStatus('order-1', 'CANCELLED')
+    expect(result).toMatchObject({ status: 'CANCELLED' })
+    expect(variantUpdateCalled).toBe(true)
+  })
 })
 
 // ─── cancelOrder ─────────────────────────────────────────────────────────────
 
 describe('cancelOrder', () => {
-  it('cancels a PENDING order and restores stock', async () => {
+  function makeTx(cancelledOrder: object) {
+    return vi.mocked(prisma.$transaction).mockImplementation(async (cb: unknown) => {
+      if (typeof cb === 'function') {
+        const tx = {
+          productVariant: { update: vi.fn().mockResolvedValue({}) },
+          coupon: { update: vi.fn().mockResolvedValue({}) },
+          order: { update: vi.fn().mockResolvedValue(cancelledOrder) },
+        }
+        return cb(tx)
+      }
+      return cb
+    })
+  }
+
+  it('cancels a PENDING order without restoring stock (payment never collected)', async () => {
     const orderWithItems = {
       ...mockOrder,
       status: 'PENDING',
@@ -298,10 +343,16 @@ describe('cancelOrder', () => {
       items: [{ id: 'oi-1', variantId: 'var-1', quantity: 2 }],
     }
     vi.mocked(prisma.order.findUnique).mockResolvedValue(orderWithItems as never)
+    let variantUpdateCalled = false
     vi.mocked(prisma.$transaction).mockImplementation(async (cb: unknown) => {
       if (typeof cb === 'function') {
         const tx = {
-          productVariant: { update: vi.fn().mockResolvedValue({}) },
+          productVariant: {
+            update: vi.fn().mockImplementation(() => {
+              variantUpdateCalled = true
+              return {}
+            }),
+          },
           coupon: { update: vi.fn().mockResolvedValue({}) },
           order: { update: vi.fn().mockResolvedValue({ ...orderWithItems, status: 'CANCELLED' }) },
         }
@@ -312,6 +363,38 @@ describe('cancelOrder', () => {
 
     const result = await cancelOrder('order-1', 'user-1')
     expect(result).toMatchObject({ status: 'CANCELLED' })
+    expect(variantUpdateCalled).toBe(false)
+  })
+
+  it('cancels a CONFIRMED order and restores stock', async () => {
+    const confirmedOrder = {
+      ...mockOrder,
+      status: 'CONFIRMED',
+      couponCode: null,
+      items: [{ id: 'oi-1', variantId: 'var-1', quantity: 2 }],
+    }
+    vi.mocked(prisma.order.findUnique).mockResolvedValue(confirmedOrder as never)
+    let variantUpdateCalled = false
+    vi.mocked(prisma.$transaction).mockImplementation(async (cb: unknown) => {
+      if (typeof cb === 'function') {
+        const tx = {
+          productVariant: {
+            update: vi.fn().mockImplementation(() => {
+              variantUpdateCalled = true
+              return {}
+            }),
+          },
+          coupon: { update: vi.fn().mockResolvedValue({}) },
+          order: { update: vi.fn().mockResolvedValue({ ...confirmedOrder, status: 'CANCELLED' }) },
+        }
+        return cb(tx)
+      }
+      return cb
+    })
+
+    const result = await cancelOrder('order-1', 'user-1')
+    expect(result).toMatchObject({ status: 'CANCELLED' })
+    expect(variantUpdateCalled).toBe(true)
   })
 
   it('throws notFound when order does not exist', async () => {
