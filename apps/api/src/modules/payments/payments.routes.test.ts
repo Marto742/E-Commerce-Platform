@@ -233,8 +233,8 @@ describe('POST /v1/payments/webhook', () => {
 describe('GET /v1/payments/status/:orderId', () => {
   const mockStatus = {
     orderId: 'order-1',
-    orderStatus: 'PENDING',
-    paymentIntentStatus: 'requires_action',
+    orderStatus: 'PENDING' as const,
+    paymentIntentStatus: 'requires_action' as string | null,
     requiresAction: true,
   }
 

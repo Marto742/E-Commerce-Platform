@@ -1,5 +1,5 @@
 import { Router } from 'express'
-import { z } from 'zod'
+import type { z } from 'zod'
 import { validate } from '@/middleware/validate'
 import { writeLimiter } from '@/middleware/rateLimiter'
 import { getShippingRates } from '@/utils/shipping'

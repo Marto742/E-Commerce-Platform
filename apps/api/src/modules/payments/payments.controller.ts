@@ -27,7 +27,7 @@ export const getStatus: RequestHandler = async (req, res, next) => {
   try {
     if (!req.user?.id) throw AppError.unauthorized()
     const result = await paymentsService.getPaymentStatus(
-      req.params['orderId']!,
+      req.params.orderId as string,
       req.user.id,
       req.user.role === 'ADMIN'
     )
