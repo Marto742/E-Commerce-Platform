@@ -53,8 +53,18 @@ export { createReviewSchema, updateReviewSchema, reviewQuerySchema } from './sch
 export type { CreateReviewInput, UpdateReviewInput, ReviewQueryInput } from './schemas/review'
 
 // Coupon
-export { createCouponSchema, updateCouponSchema, applyCouponSchema } from './schemas/coupon'
-export type { CreateCouponInput, UpdateCouponInput, ApplyCouponInput } from './schemas/coupon'
+export {
+  createCouponSchema,
+  updateCouponSchema,
+  applyCouponSchema,
+  validateCouponSchema,
+} from './schemas/coupon'
+export type {
+  CreateCouponInput,
+  UpdateCouponInput,
+  ApplyCouponInput,
+  ValidateCouponInput,
+} from './schemas/coupon'
 
 // Inventory
 export { inventoryQuerySchema, lowStockQuerySchema } from './schemas/inventory'

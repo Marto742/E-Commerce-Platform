@@ -26,3 +26,10 @@ export const applyCouponSchema = z.object({
 })
 
 export type ApplyCouponInput = z.infer<typeof applyCouponSchema>
+
+export const validateCouponSchema = z.object({
+  code: z.string().min(1).max(50),
+  subtotal: z.number().positive('Subtotal must be a positive number'),
+})
+
+export type ValidateCouponInput = z.infer<typeof validateCouponSchema>
