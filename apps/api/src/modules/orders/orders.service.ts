@@ -65,7 +65,7 @@ export async function getOrderById(id: string, userId: string, isAdmin: boolean)
   })
 
   if (!order) throw AppError.notFound('Order not found')
-  if (!isAdmin && order.userId !== userId) throw AppError.forbidden()
+  if (!isAdmin && (!order.userId || order.userId !== userId)) throw AppError.forbidden()
 
   return order
 }
@@ -286,7 +286,8 @@ export async function cancelOrder(id: string, userId: string) {
   })
 
   if (!order) throw AppError.notFound('Order not found')
-  if (order.userId !== userId) throw AppError.forbidden()
+  // Guest orders have no userId — they cannot be cancelled through this endpoint
+  if (!order.userId || order.userId !== userId) throw AppError.forbidden()
   if (!['PENDING', 'CONFIRMED'].includes(order.status)) {
     throw AppError.badRequest('Only pending or confirmed orders can be cancelled')
   }

@@ -239,7 +239,8 @@ model CartItem {
 
 model Order {
   id                    String      @id @default(cuid())
-  userId                String      @map("user_id")
+  userId                String?     @map("user_id")
+  guestEmail            String?     @map("guest_email")
   status                OrderStatus @default(PENDING)
   subtotal              Decimal     @db.Decimal(10, 2)
   shippingCost          Decimal     @default(0) @map("shipping_cost") @db.Decimal(10, 2)
@@ -255,7 +256,7 @@ model Order {
   createdAt             DateTime    @default(now()) @map("created_at")
   updatedAt             DateTime    @updatedAt @map("updated_at")
 
-  user  User        @relation(fields: [userId], references: [id])
+  user  User?       @relation(fields: [userId], references: [id])
   items OrderItem[]
 
   @@index([userId])

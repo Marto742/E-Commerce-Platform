@@ -14,6 +14,15 @@ export const createIntent: RequestHandler = async (req, res, next) => {
   }
 }
 
+export const createGuestIntent: RequestHandler = async (req, res, next) => {
+  try {
+    const result = await paymentsService.createGuestPaymentIntent(req.body)
+    sendCreated(res, result)
+  } catch (err) {
+    next(err)
+  }
+}
+
 export const webhook: RequestHandler = async (req, res, next) => {
   try {
     const signature = req.headers['stripe-signature']

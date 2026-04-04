@@ -85,10 +85,20 @@ async function confirmOrder(pi: PaymentIntentEventObject): Promise<void> {
     country: string
   }
 
+  // Resolve the recipient — authenticated user or guest email
+  const customerEmail = order.user?.email ?? order.guestEmail
+  if (!customerEmail) {
+    logger.warn('No email address on order — skipping confirmation email', { orderId })
+    return
+  }
+  const customerName = order.user
+    ? `${order.user.firstName} ${order.user.lastName}`.trim() || undefined
+    : (pi.metadata['guestName'] ?? undefined)
+
   sendOrderConfirmationEmail({
     orderId: order.id,
-    customerEmail: order.user.email,
-    customerName: `${order.user.firstName} ${order.user.lastName}`.trim() || undefined,
+    customerEmail,
+    customerName,
     items: order.items.map((item) => ({
       productName: item.productName,
       variantName: item.variantName,

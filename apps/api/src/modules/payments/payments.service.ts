@@ -1,15 +1,14 @@
 import { prisma } from '@/lib/prisma'
 import { stripe } from '@/lib/stripe'
 import { AppError } from '@/utils/AppError'
-import type { CreatePaymentIntentInput } from '@repo/validation'
+import type { CreatePaymentIntentInput, GuestCreatePaymentIntentInput } from '@repo/validation'
 
 const SHIPPING_COST = 5.0
 const TAX_RATE = 0.08
 
-export async function createPaymentIntent(userId: string, data: CreatePaymentIntentInput) {
-  const { items, shippingAddress, billingAddress, couponCode } = data
+// ─── Shared helpers ───────────────────────────────────────────────────────────
 
-  // 1. Validate variants
+async function resolveCartItems(items: Array<{ variantId: string; quantity: number }>) {
   const variantIds = items.map((i) => i.variantId)
   const variants = await prisma.productVariant.findMany({
     where: { id: { in: variantIds }, isActive: true },
@@ -31,7 +30,6 @@ export async function createPaymentIntent(userId: string, data: CreatePaymentInt
     }
   }
 
-  // 2. Build order items + subtotal
   let subtotal = 0
   const orderItemsData = items.map((item) => {
     const variant = variants.find((v) => v.id === item.variantId)!
@@ -46,111 +44,140 @@ export async function createPaymentIntent(userId: string, data: CreatePaymentInt
     }
   })
 
-  // 3. Apply coupon
-  let discountAmount = 0
-  let appliedCoupon: Awaited<ReturnType<typeof prisma.coupon.findUnique>> = null
+  return { subtotal, orderItemsData }
+}
 
-  if (couponCode) {
-    const coupon = await prisma.coupon.findUnique({
-      where: { code: couponCode.toUpperCase() },
-    })
+async function resolveCoupon(couponCode: string | undefined, subtotal: number) {
+  if (!couponCode) return { discountAmount: 0, appliedCoupon: null }
 
-    if (!coupon || !coupon.isActive)
-      throw new AppError(422, 'COUPON_INVALID', 'Invalid coupon code')
-    if (coupon.expiresAt && coupon.expiresAt < new Date())
-      throw new AppError(422, 'COUPON_INVALID', 'Coupon has expired')
-    if (coupon.maxUses !== null && coupon.usesCount >= coupon.maxUses)
-      throw new AppError(422, 'COUPON_INVALID', 'Coupon has reached its usage limit')
-    if (coupon.minOrderAmount !== null && subtotal < Number(coupon.minOrderAmount))
-      throw new AppError(
-        422,
-        'COUPON_INVALID',
-        `Minimum order amount for this coupon is ${Number(coupon.minOrderAmount).toFixed(2)}`
-      )
+  const coupon = await prisma.coupon.findUnique({
+    where: { code: couponCode.toUpperCase() },
+  })
 
-    discountAmount =
-      coupon.type === 'PERCENTAGE'
-        ? (subtotal * Number(coupon.value)) / 100
-        : Math.min(Number(coupon.value), subtotal)
+  if (!coupon || !coupon.isActive) throw new AppError(422, 'COUPON_INVALID', 'Invalid coupon code')
+  if (coupon.expiresAt && coupon.expiresAt < new Date())
+    throw new AppError(422, 'COUPON_INVALID', 'Coupon has expired')
+  if (coupon.maxUses !== null && coupon.usesCount >= coupon.maxUses)
+    throw new AppError(422, 'COUPON_INVALID', 'Coupon has reached its usage limit')
+  if (coupon.minOrderAmount !== null && subtotal < Number(coupon.minOrderAmount))
+    throw new AppError(
+      422,
+      'COUPON_INVALID',
+      `Minimum order amount for this coupon is ${Number(coupon.minOrderAmount).toFixed(2)}`
+    )
 
-    appliedCoupon = coupon
+  const discountAmount =
+    coupon.type === 'PERCENTAGE'
+      ? (subtotal * Number(coupon.value)) / 100
+      : Math.min(Number(coupon.value), subtotal)
+
+  return { discountAmount, appliedCoupon: coupon }
+}
+
+function snapshotAddress(addr: {
+  line1: string
+  line2?: string | null
+  city: string
+  state: string
+  postalCode: string
+  country: string
+}) {
+  return {
+    line1: addr.line1,
+    line2: addr.line2 ?? null,
+    city: addr.city,
+    state: addr.state,
+    postalCode: addr.postalCode,
+    country: addr.country,
   }
+}
 
-  // 4. Final totals
+function buildBreakdown(subtotal: number, discountAmount: number) {
   const tax = (subtotal - discountAmount) * TAX_RATE
   const total = subtotal + SHIPPING_COST + tax - discountAmount
-  const totalInCents = Math.round(total * 100)
+  return { tax, total, totalInCents: Math.round(total * 100) }
+}
 
-  // 5. Snapshot addresses (stored as JSON on the order)
-  const snapshotShipping = {
-    line1: shippingAddress.line1,
-    line2: shippingAddress.line2 ?? null,
-    city: shippingAddress.city,
-    state: shippingAddress.state,
-    postalCode: shippingAddress.postalCode,
-    country: shippingAddress.country,
-  }
-  const snapshotBilling = billingAddress
-    ? {
-        line1: billingAddress.line1,
-        line2: billingAddress.line2 ?? null,
-        city: billingAddress.city,
-        state: billingAddress.state,
-        postalCode: billingAddress.postalCode,
-        country: billingAddress.country,
-      }
-    : snapshotShipping
-
-  // 6. Create order (PENDING) + decrement stock in a transaction
-  const order = await prisma.$transaction(async (tx) => {
-    for (const item of items) {
-      await tx.productVariant.update({
-        where: { id: item.variantId },
-        data: { stock: { decrement: item.quantity } },
-      })
-    }
-
-    if (appliedCoupon) {
+async function persistOrder(data: {
+  userId?: string | null
+  guestEmail?: string | null
+  subtotal: number
+  discountAmount: number
+  tax: number
+  total: number
+  couponCode: string | null
+  appliedCouponId: string | null
+  shippingAddress: ReturnType<typeof snapshotAddress>
+  billingAddress: ReturnType<typeof snapshotAddress>
+  orderItemsData: Array<{
+    variantId: string
+    productName: string
+    variantName: string
+    price: string
+    quantity: number
+  }>
+}) {
+  // Note: stock is NOT decremented here — deduction happens atomically in the
+  // payment_intent.succeeded webhook to avoid holding stock against unpaid orders.
+  return prisma.$transaction(async (tx) => {
+    if (data.appliedCouponId) {
       await tx.coupon.update({
-        where: { id: appliedCoupon.id },
+        where: { id: data.appliedCouponId },
         data: { usesCount: { increment: 1 } },
       })
     }
 
     return tx.order.create({
       data: {
-        userId,
+        userId: data.userId ?? null,
+        guestEmail: data.guestEmail ?? null,
         status: 'PENDING',
-        subtotal: subtotal.toFixed(2),
+        subtotal: data.subtotal.toFixed(2),
         shippingCost: SHIPPING_COST.toFixed(2),
-        tax: tax.toFixed(2),
-        total: total.toFixed(2),
-        discountAmount: discountAmount.toFixed(2),
-        couponCode: appliedCoupon?.code ?? null,
-        shippingAddress: snapshotShipping,
-        billingAddress: snapshotBilling,
-        items: { createMany: { data: orderItemsData } },
+        tax: data.tax.toFixed(2),
+        total: data.total.toFixed(2),
+        discountAmount: data.discountAmount.toFixed(2),
+        couponCode: data.couponCode,
+        shippingAddress: data.shippingAddress,
+        billingAddress: data.billingAddress,
+        items: { createMany: { data: data.orderItemsData } },
       },
     })
   })
+}
 
-  // 7. Create Stripe PaymentIntent
+async function attachPaymentIntent(
+  order: { id: string },
+  totalInCents: number,
+  metadata: Record<string, string>
+) {
   const paymentIntent = await stripe.paymentIntents.create({
     amount: totalInCents,
     currency: 'usd',
-    metadata: { orderId: order.id, userId },
+    metadata,
     automatic_payment_methods: { enabled: true },
   })
 
-  // 8. Store paymentIntentId on the order
   await prisma.order.update({
     where: { id: order.id },
     data: { stripePaymentIntentId: paymentIntent.id },
   })
 
+  return paymentIntent
+}
+
+function formatResult(
+  paymentIntent: { client_secret: string | null },
+  orderId: string,
+  totalInCents: number,
+  subtotal: number,
+  discountAmount: number,
+  tax: number,
+  total: number
+) {
   return {
     clientSecret: paymentIntent.client_secret,
-    orderId: order.id,
+    orderId,
     amount: totalInCents,
     currency: 'usd',
     breakdown: {
@@ -161,4 +188,69 @@ export async function createPaymentIntent(userId: string, data: CreatePaymentInt
       total: Number(total.toFixed(2)),
     },
   }
+}
+
+// ─── Authenticated checkout ───────────────────────────────────────────────────
+
+export async function createPaymentIntent(userId: string, data: CreatePaymentIntentInput) {
+  const { items, shippingAddress, billingAddress, couponCode } = data
+
+  const { subtotal, orderItemsData } = await resolveCartItems(items)
+  const { discountAmount, appliedCoupon } = await resolveCoupon(couponCode, subtotal)
+  const { tax, total, totalInCents } = buildBreakdown(subtotal, discountAmount)
+
+  const order = await persistOrder({
+    userId,
+    subtotal,
+    discountAmount,
+    tax,
+    total,
+    couponCode: appliedCoupon?.code ?? null,
+    appliedCouponId: appliedCoupon?.id ?? null,
+    shippingAddress: snapshotAddress(shippingAddress),
+    billingAddress: billingAddress
+      ? snapshotAddress(billingAddress)
+      : snapshotAddress(shippingAddress),
+    orderItemsData,
+  })
+
+  const paymentIntent = await attachPaymentIntent(order, totalInCents, {
+    orderId: order.id,
+    userId,
+  })
+
+  return formatResult(paymentIntent, order.id, totalInCents, subtotal, discountAmount, tax, total)
+}
+
+// ─── Guest checkout ───────────────────────────────────────────────────────────
+
+export async function createGuestPaymentIntent(data: GuestCreatePaymentIntentInput) {
+  const { items, shippingAddress, billingAddress, couponCode, email, firstName, lastName } = data
+
+  const { subtotal, orderItemsData } = await resolveCartItems(items)
+  const { discountAmount, appliedCoupon } = await resolveCoupon(couponCode, subtotal)
+  const { tax, total, totalInCents } = buildBreakdown(subtotal, discountAmount)
+
+  const order = await persistOrder({
+    guestEmail: email,
+    subtotal,
+    discountAmount,
+    tax,
+    total,
+    couponCode: appliedCoupon?.code ?? null,
+    appliedCouponId: appliedCoupon?.id ?? null,
+    shippingAddress: snapshotAddress(shippingAddress),
+    billingAddress: billingAddress
+      ? snapshotAddress(billingAddress)
+      : snapshotAddress(shippingAddress),
+    orderItemsData,
+  })
+
+  const paymentIntent = await attachPaymentIntent(order, totalInCents, {
+    orderId: order.id,
+    guestEmail: email,
+    guestName: `${firstName} ${lastName}`.trim(),
+  })
+
+  return formatResult(paymentIntent, order.id, totalInCents, subtotal, discountAmount, tax, total)
 }

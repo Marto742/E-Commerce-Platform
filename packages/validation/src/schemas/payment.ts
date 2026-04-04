@@ -71,3 +71,13 @@ export const createPaymentIntentSchema = z.object({
 })
 
 export type CreatePaymentIntentInput = z.infer<typeof createPaymentIntentSchema>
+
+// ─── Guest checkout ────────────────────────────────────────────────────────────
+
+export const guestCreatePaymentIntentSchema = createPaymentIntentSchema.extend({
+  email: z.string().email('A valid email is required for guest checkout'),
+  firstName: z.string().min(1).max(100),
+  lastName: z.string().min(1).max(100),
+})
+
+export type GuestCreatePaymentIntentInput = z.infer<typeof guestCreatePaymentIntentSchema>
