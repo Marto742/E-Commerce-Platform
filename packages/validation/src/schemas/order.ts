@@ -23,6 +23,7 @@ export const createOrderSchema = z.object({
   shippingAddressId: z.string().cuid(),
   billingAddressId: z.string().cuid().optional(),
   couponCode: z.string().optional(),
+  shippingMethod: z.enum(['STANDARD', 'EXPRESS', 'OVERNIGHT']).default('STANDARD'),
   notes: z.string().max(1000).optional(),
 })
 

@@ -2,9 +2,9 @@ import { prisma } from '@/lib/prisma'
 import { AppError } from '@/utils/AppError'
 import { buildPaginationMeta } from '@/utils/response'
 import { generateTrackingNumber } from '@/utils/tracking'
+import { calculateShipping, type ShippingMethod } from '@/utils/shipping'
 import type { CreateOrderInput, OrderQueryInput } from '@repo/validation'
 
-const SHIPPING_COST = 5.0
 const TAX_RATE = 0.08
 
 const ORDER_DETAIL_INCLUDE = {
@@ -71,7 +71,7 @@ export async function getOrderById(id: string, userId: string, isAdmin: boolean)
 }
 
 export async function createOrder(userId: string, data: CreateOrderInput) {
-  const { items, shippingAddressId, billingAddressId, couponCode, notes } = data
+  const { items, shippingAddressId, billingAddressId, couponCode, shippingMethod, notes } = data
 
   // 1. Validate all variants in one query
   const variantIds = items.map((i) => i.variantId)
@@ -140,11 +140,7 @@ export async function createOrder(userId: string, data: CreateOrderInput) {
     appliedCoupon = coupon
   }
 
-  // 4. Final totals
-  const tax = (subtotal - discountAmount) * TAX_RATE
-  const total = subtotal + SHIPPING_COST + tax - discountAmount
-
-  // 5. Snapshot shipping address (stored as JSON so it's immutable)
+  // 4. Resolve shipping address (needed for country-based shipping rate)
   const shippingAddr = await prisma.address.findFirst({
     where: { id: shippingAddressId, userId },
   })
@@ -168,6 +164,15 @@ export async function createOrder(userId: string, data: CreateOrderInput) {
     country: addr.country,
   })
 
+  // 5. Final totals
+  const shippingCost = calculateShipping(
+    shippingAddr.country,
+    subtotal,
+    shippingMethod as ShippingMethod
+  )
+  const tax = (subtotal - discountAmount) * TAX_RATE
+  const total = subtotal + shippingCost + tax - discountAmount
+
   // 6. Persist everything in a single transaction
   // Note: stock is NOT decremented here — it is decremented atomically in the
   // payment_intent.succeeded webhook (task 5.16). This prevents stock from
@@ -185,7 +190,7 @@ export async function createOrder(userId: string, data: CreateOrderInput) {
         userId,
         status: 'PENDING',
         subtotal: subtotal.toFixed(2),
-        shippingCost: SHIPPING_COST.toFixed(2),
+        shippingCost: shippingCost.toFixed(2),
         tax: tax.toFixed(2),
         total: total.toFixed(2),
         discountAmount: discountAmount.toFixed(2),

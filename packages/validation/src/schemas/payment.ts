@@ -68,6 +68,7 @@ export const createPaymentIntentSchema = z.object({
   shippingAddress: addressSchema,
   billingAddress: addressSchema.optional(),
   couponCode: z.string().optional(),
+  shippingMethod: z.enum(['STANDARD', 'EXPRESS', 'OVERNIGHT']).default('STANDARD'),
 })
 
 export type CreatePaymentIntentInput = z.infer<typeof createPaymentIntentSchema>
@@ -81,3 +82,14 @@ export const guestCreatePaymentIntentSchema = createPaymentIntentSchema.extend({
 })
 
 export type GuestCreatePaymentIntentInput = z.infer<typeof guestCreatePaymentIntentSchema>
+
+// ─── Shipping estimate ─────────────────────────────────────────────────────────
+
+export const shippingEstimateSchema = z.object({
+  country: z.string().length(2, 'Use a 2-letter ISO country code'),
+  subtotal: z.number().nonnegative(),
+})
+
+export type ShippingEstimateInput = z.infer<typeof shippingEstimateSchema>
+
+export const checkoutShippingMethodSchema = z.enum(['STANDARD', 'EXPRESS', 'OVERNIGHT'])

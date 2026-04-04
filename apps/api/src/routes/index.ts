@@ -10,6 +10,7 @@ import reviewsRouter from '@/modules/reviews/reviews.routes'
 import wishlistRouter from '@/modules/wishlist/wishlist.routes'
 import paymentsRouter from '@/modules/payments/payments.routes'
 import couponsRouter from '@/modules/coupons/coupons.routes'
+import shippingRouter from '@/modules/shipping/shipping.routes'
 
 const router: Router = Router()
 
@@ -53,6 +54,9 @@ router.use('/inventory', inventoryRouter)
 
 // ── Coupons ───────────────────────────────────────────────────────────────────
 router.use('/coupons', couponsRouter)
+
+// ── Shipping ──────────────────────────────────────────────────────────────────
+router.use('/shipping', shippingRouter)
 
 // ── Admin ─────────────────────────────────────────────────
 // router.use('/admin', adminRouter)        // Phase 6

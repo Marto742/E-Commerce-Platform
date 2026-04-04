@@ -75,8 +75,17 @@ export { addToWishlistSchema } from './schemas/wishlist'
 export type { AddToWishlistInput } from './schemas/wishlist'
 
 // Payment
-export { createPaymentIntentSchema, guestCreatePaymentIntentSchema } from './schemas/payment'
-export type { CreatePaymentIntentInput, GuestCreatePaymentIntentInput } from './schemas/payment'
+export {
+  createPaymentIntentSchema,
+  guestCreatePaymentIntentSchema,
+  shippingEstimateSchema,
+  checkoutShippingMethodSchema,
+} from './schemas/payment'
+export type {
+  CreatePaymentIntentInput,
+  GuestCreatePaymentIntentInput,
+  ShippingEstimateInput,
+} from './schemas/payment'
 
 // Common
 export {

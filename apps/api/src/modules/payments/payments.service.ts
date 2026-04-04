@@ -1,9 +1,9 @@
 import { prisma } from '@/lib/prisma'
 import { stripe } from '@/lib/stripe'
 import { AppError } from '@/utils/AppError'
+import { calculateShipping, type ShippingMethod } from '@/utils/shipping'
 import type { CreatePaymentIntentInput, GuestCreatePaymentIntentInput } from '@repo/validation'
 
-const SHIPPING_COST = 5.0
 const TAX_RATE = 0.08
 
 // ─── Shared helpers ───────────────────────────────────────────────────────────
@@ -92,9 +92,9 @@ function snapshotAddress(addr: {
   }
 }
 
-function buildBreakdown(subtotal: number, discountAmount: number) {
+function buildBreakdown(subtotal: number, discountAmount: number, shippingCost: number) {
   const tax = (subtotal - discountAmount) * TAX_RATE
-  const total = subtotal + SHIPPING_COST + tax - discountAmount
+  const total = subtotal + shippingCost + tax - discountAmount
   return { tax, total, totalInCents: Math.round(total * 100) }
 }
 
@@ -102,6 +102,7 @@ async function persistOrder(data: {
   userId?: string | null
   guestEmail?: string | null
   subtotal: number
+  shippingCost: number
   discountAmount: number
   tax: number
   total: number
@@ -133,7 +134,7 @@ async function persistOrder(data: {
         guestEmail: data.guestEmail ?? null,
         status: 'PENDING',
         subtotal: data.subtotal.toFixed(2),
-        shippingCost: SHIPPING_COST.toFixed(2),
+        shippingCost: data.shippingCost.toFixed(2),
         tax: data.tax.toFixed(2),
         total: data.total.toFixed(2),
         discountAmount: data.discountAmount.toFixed(2),
@@ -171,6 +172,7 @@ function formatResult(
   orderId: string,
   totalInCents: number,
   subtotal: number,
+  shippingCost: number,
   discountAmount: number,
   tax: number,
   total: number
@@ -182,7 +184,7 @@ function formatResult(
     currency: 'usd',
     breakdown: {
       subtotal: Number(subtotal.toFixed(2)),
-      shipping: SHIPPING_COST,
+      shipping: Number(shippingCost.toFixed(2)),
       tax: Number(tax.toFixed(2)),
       discount: Number(discountAmount.toFixed(2)),
       total: Number(total.toFixed(2)),
@@ -193,15 +195,21 @@ function formatResult(
 // ─── Authenticated checkout ───────────────────────────────────────────────────
 
 export async function createPaymentIntent(userId: string, data: CreatePaymentIntentInput) {
-  const { items, shippingAddress, billingAddress, couponCode } = data
+  const { items, shippingAddress, billingAddress, couponCode, shippingMethod } = data
 
   const { subtotal, orderItemsData } = await resolveCartItems(items)
   const { discountAmount, appliedCoupon } = await resolveCoupon(couponCode, subtotal)
-  const { tax, total, totalInCents } = buildBreakdown(subtotal, discountAmount)
+  const shippingCost = calculateShipping(
+    shippingAddress.country,
+    subtotal,
+    shippingMethod as ShippingMethod
+  )
+  const { tax, total, totalInCents } = buildBreakdown(subtotal, discountAmount, shippingCost)
 
   const order = await persistOrder({
     userId,
     subtotal,
+    shippingCost,
     discountAmount,
     tax,
     total,
@@ -219,21 +227,45 @@ export async function createPaymentIntent(userId: string, data: CreatePaymentInt
     userId,
   })
 
-  return formatResult(paymentIntent, order.id, totalInCents, subtotal, discountAmount, tax, total)
+  return formatResult(
+    paymentIntent,
+    order.id,
+    totalInCents,
+    subtotal,
+    shippingCost,
+    discountAmount,
+    tax,
+    total
+  )
 }
 
 // ─── Guest checkout ───────────────────────────────────────────────────────────
 
 export async function createGuestPaymentIntent(data: GuestCreatePaymentIntentInput) {
-  const { items, shippingAddress, billingAddress, couponCode, email, firstName, lastName } = data
+  const {
+    items,
+    shippingAddress,
+    billingAddress,
+    couponCode,
+    shippingMethod,
+    email,
+    firstName,
+    lastName,
+  } = data
 
   const { subtotal, orderItemsData } = await resolveCartItems(items)
   const { discountAmount, appliedCoupon } = await resolveCoupon(couponCode, subtotal)
-  const { tax, total, totalInCents } = buildBreakdown(subtotal, discountAmount)
+  const shippingCost = calculateShipping(
+    shippingAddress.country,
+    subtotal,
+    shippingMethod as ShippingMethod
+  )
+  const { tax, total, totalInCents } = buildBreakdown(subtotal, discountAmount, shippingCost)
 
   const order = await persistOrder({
     guestEmail: email,
     subtotal,
+    shippingCost,
     discountAmount,
     tax,
     total,
@@ -252,5 +284,14 @@ export async function createGuestPaymentIntent(data: GuestCreatePaymentIntentInp
     guestName: `${firstName} ${lastName}`.trim(),
   })
 
-  return formatResult(paymentIntent, order.id, totalInCents, subtotal, discountAmount, tax, total)
+  return formatResult(
+    paymentIntent,
+    order.id,
+    totalInCents,
+    subtotal,
+    shippingCost,
+    discountAmount,
+    tax,
+    total
+  )
 }
