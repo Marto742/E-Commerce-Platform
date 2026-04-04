@@ -1,5 +1,16 @@
 import { z } from 'zod'
 
+export const addressSchema = z.object({
+  line1: z.string().min(1).max(255),
+  line2: z.string().max(255).optional(),
+  city: z.string().min(1).max(100),
+  state: z.string().min(1).max(100),
+  postalCode: z.string().min(1).max(20),
+  country: z.string().length(2).default('US'),
+})
+
+export type AddressInput = z.infer<typeof addressSchema>
+
 export const createPaymentIntentSchema = z.object({
   items: z
     .array(
@@ -9,8 +20,8 @@ export const createPaymentIntentSchema = z.object({
       })
     )
     .min(1),
-  shippingAddressId: z.string().cuid(),
-  billingAddressId: z.string().cuid().optional(),
+  shippingAddress: addressSchema,
+  billingAddress: addressSchema.optional(),
   couponCode: z.string().optional(),
 })
 

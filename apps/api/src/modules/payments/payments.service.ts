@@ -7,7 +7,7 @@ const SHIPPING_COST = 5.0
 const TAX_RATE = 0.08
 
 export async function createPaymentIntent(userId: string, data: CreatePaymentIntentInput) {
-  const { items, shippingAddressId, billingAddressId, couponCode } = data
+  const { items, shippingAddress, billingAddress, couponCode } = data
 
   // 1. Validate variants
   const variantIds = items.map((i) => i.variantId)
@@ -81,27 +81,25 @@ export async function createPaymentIntent(userId: string, data: CreatePaymentInt
   const total = subtotal + SHIPPING_COST + tax - discountAmount
   const totalInCents = Math.round(total * 100)
 
-  // 5. Resolve addresses
-  const shippingAddr = await prisma.address.findFirst({
-    where: { id: shippingAddressId, userId },
-  })
-  if (!shippingAddr) throw AppError.notFound('Shipping address not found')
-
-  let billingAddr = shippingAddr
-  if (billingAddressId) {
-    const found = await prisma.address.findFirst({ where: { id: billingAddressId, userId } })
-    if (!found) throw AppError.notFound('Billing address not found')
-    billingAddr = found
+  // 5. Snapshot addresses (stored as JSON on the order)
+  const snapshotShipping = {
+    line1: shippingAddress.line1,
+    line2: shippingAddress.line2 ?? null,
+    city: shippingAddress.city,
+    state: shippingAddress.state,
+    postalCode: shippingAddress.postalCode,
+    country: shippingAddress.country,
   }
-
-  const snapshotAddress = (addr: typeof shippingAddr) => ({
-    line1: addr.line1,
-    line2: addr.line2 ?? null,
-    city: addr.city,
-    state: addr.state,
-    postalCode: addr.postalCode,
-    country: addr.country,
-  })
+  const snapshotBilling = billingAddress
+    ? {
+        line1: billingAddress.line1,
+        line2: billingAddress.line2 ?? null,
+        city: billingAddress.city,
+        state: billingAddress.state,
+        postalCode: billingAddress.postalCode,
+        country: billingAddress.country,
+      }
+    : snapshotShipping
 
   // 6. Create order (PENDING) + decrement stock in a transaction
   const order = await prisma.$transaction(async (tx) => {
@@ -129,8 +127,8 @@ export async function createPaymentIntent(userId: string, data: CreatePaymentInt
         total: total.toFixed(2),
         discountAmount: discountAmount.toFixed(2),
         couponCode: appliedCoupon?.code ?? null,
-        shippingAddress: snapshotAddress(shippingAddr),
-        billingAddress: snapshotAddress(billingAddr),
+        shippingAddress: snapshotShipping,
+        billingAddress: snapshotBilling,
         items: { createMany: { data: orderItemsData } },
       },
     })
@@ -140,10 +138,7 @@ export async function createPaymentIntent(userId: string, data: CreatePaymentInt
   const paymentIntent = await stripe.paymentIntents.create({
     amount: totalInCents,
     currency: 'usd',
-    metadata: {
-      orderId: order.id,
-      userId,
-    },
+    metadata: { orderId: order.id, userId },
     automatic_payment_methods: { enabled: true },
   })
 
