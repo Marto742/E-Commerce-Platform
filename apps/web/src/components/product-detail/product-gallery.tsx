@@ -36,7 +36,11 @@ function Lightbox({ images, activeIndex, productName, onClose, onPrev, onNext }:
     if (touchStartX.current === null) return
     const dx = (e.changedTouches[0]?.clientX ?? 0) - touchStartX.current
     if (Math.abs(dx) > 50) {
-      dx < 0 ? onNext() : onPrev()
+      if (dx < 0) {
+        onNext()
+      } else {
+        onPrev()
+      }
     }
     touchStartX.current = null
   }

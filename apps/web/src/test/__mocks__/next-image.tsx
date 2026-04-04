@@ -12,6 +12,7 @@ const NextImage = ({
   fill?: boolean
   sizes?: string
   priority?: boolean
+  // eslint-disable-next-line @next/next/no-img-element
 }) => <img src={src as string} alt={alt} {...rest} />
 
 NextImage.displayName = 'NextImage'

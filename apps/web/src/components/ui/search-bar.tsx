@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -29,7 +29,7 @@ export function SearchBar({ className }: SearchBarProps) {
   const containerRef = useRef<HTMLDivElement>(null)
 
   const { data, isFetching } = useSearchSuggestions(query)
-  const suggestions = data?.data ?? []
+  const suggestions = useMemo(() => data?.data ?? [], [data])
   const showDropdown = open && query.trim().length >= 2
 
   // Focus input when opened

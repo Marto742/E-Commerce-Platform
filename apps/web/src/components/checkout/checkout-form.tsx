@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ChevronRight, Tag, X } from 'lucide-react'
 import { cn } from '@repo/ui'
@@ -135,9 +136,9 @@ export function CheckoutForm() {
     return (
       <div className="flex flex-col items-center justify-center py-24 text-center">
         <p className="text-lg font-medium">Your cart is empty.</p>
-        <a href="/products" className="mt-4 text-sm text-primary underline">
+        <Link href="/products" className="mt-4 text-sm text-primary underline">
           Browse products
-        </a>
+        </Link>
       </div>
     )
   }
