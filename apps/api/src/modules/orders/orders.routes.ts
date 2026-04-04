@@ -20,7 +20,7 @@ const updateTrackingBodySchema = z.object({
     .string()
     .min(1)
     .max(100)
-    .regex(/^[A-Z0-9\-]+$/, 'Tracking number must be uppercase alphanumeric with hyphens'),
+    .regex(/^[A-Z0-9-]+$/, 'Tracking number must be uppercase alphanumeric with hyphens'),
 })
 
 router.get('/', validate(orderQuerySchema, 'query'), parsePagination, controller.list)
