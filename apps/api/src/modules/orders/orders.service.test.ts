@@ -134,6 +134,7 @@ describe('createOrder', () => {
   const orderInput = {
     items: [{ variantId: 'var-1', quantity: 2 }],
     shippingAddressId: 'addr-1',
+    shippingMethod: 'STANDARD' as const,
   }
 
   function setupCreateOrderMocks() {
