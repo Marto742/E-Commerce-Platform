@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma'
 import { stripe } from '@/lib/stripe'
 import { env } from '@/config/env'
 import { logger } from '@/lib/logger'
+import { sendOrderConfirmationEmail } from '@/lib/emails/order-confirmation'
 
 interface PaymentIntentEventObject {
   id: string
@@ -18,7 +19,13 @@ async function confirmOrder(pi: PaymentIntentEventObject): Promise<void> {
     return
   }
 
-  const order = await prisma.order.findUnique({ where: { id: orderId } })
+  const order = await prisma.order.findUnique({
+    where: { id: orderId },
+    include: {
+      user: true,
+      items: true,
+    },
+  })
   if (!order) {
     logger.warn('Order not found for payment intent', { orderId, paymentIntentId: pi.id })
     return
@@ -30,6 +37,39 @@ async function confirmOrder(pi: PaymentIntentEventObject): Promise<void> {
 
   await prisma.order.update({ where: { id: orderId }, data: { status: 'CONFIRMED' } })
   logger.info('Order confirmed via webhook', { orderId, paymentIntentId: pi.id })
+
+  const addr = order.shippingAddress as {
+    line1: string
+    line2?: string | null
+    city: string
+    state: string
+    postalCode: string
+    country: string
+  }
+
+  sendOrderConfirmationEmail({
+    orderId: order.id,
+    customerEmail: order.user.email,
+    customerName: `${order.user.firstName} ${order.user.lastName}`.trim() || undefined,
+    items: order.items.map((item) => ({
+      productName: item.productName,
+      variantName: item.variantName,
+      quantity: item.quantity,
+      price: item.price.toString(),
+    })),
+    subtotal: order.subtotal.toString(),
+    shippingCost: order.shippingCost.toString(),
+    tax: order.tax.toString(),
+    discountAmount: order.discountAmount.toString(),
+    total: order.total.toString(),
+    couponCode: order.couponCode,
+    shippingAddress: addr,
+  }).catch((err: unknown) => {
+    logger.error('Failed to send order confirmation email', {
+      orderId,
+      error: err instanceof Error ? err.message : String(err),
+    })
+  })
 }
 
 async function cancelOrder(pi: PaymentIntentEventObject): Promise<void> {
