@@ -140,16 +140,13 @@ describe('createOrder', () => {
   function setupCreateOrderMocks() {
     vi.mocked(prisma.productVariant.findMany).mockResolvedValue([mockVariant] as never)
     vi.mocked(prisma.address.findFirst).mockResolvedValue(mockAddress as never)
-    vi.mocked(prisma.$transaction).mockImplementation(async (cb: unknown) => {
-      if (typeof cb === 'function') {
-        const tx = {
-          productVariant: { update: vi.fn().mockResolvedValue({}) },
-          coupon: { update: vi.fn().mockResolvedValue({}) },
-          order: { create: vi.fn().mockResolvedValue(mockOrder) },
-        }
-        return cb(tx)
+    vi.mocked(prisma.$transaction).mockImplementation(async (cb: (tx: never) => unknown) => {
+      const tx = {
+        productVariant: { update: vi.fn().mockResolvedValue({}) },
+        coupon: { update: vi.fn().mockResolvedValue({}) },
+        order: { create: vi.fn().mockResolvedValue(mockOrder) },
       }
-      return cb
+      return cb(tx as never)
     })
   }
 
@@ -297,21 +294,18 @@ describe('updateOrderStatus', () => {
     }
     vi.mocked(prisma.order.findUnique).mockResolvedValue(confirmedOrder as never)
     let variantUpdateCalled = false
-    vi.mocked(prisma.$transaction).mockImplementation(async (cb: unknown) => {
-      if (typeof cb === 'function') {
-        const tx = {
-          productVariant: {
-            update: vi.fn().mockImplementation(() => {
-              variantUpdateCalled = true
-              return {}
-            }),
-          },
-          coupon: { update: vi.fn().mockResolvedValue({}) },
-          order: { update: vi.fn().mockResolvedValue({ ...confirmedOrder, status: 'CANCELLED' }) },
-        }
-        return cb(tx)
+    vi.mocked(prisma.$transaction).mockImplementation(async (cb: (tx: never) => unknown) => {
+      const tx = {
+        productVariant: {
+          update: vi.fn().mockImplementation(() => {
+            variantUpdateCalled = true
+            return {}
+          }),
+        },
+        coupon: { update: vi.fn().mockResolvedValue({}) },
+        order: { update: vi.fn().mockResolvedValue({ ...confirmedOrder, status: 'CANCELLED' }) },
       }
-      return cb
+      return cb(tx as never)
     })
 
     const result = await updateOrderStatus('order-1', 'CANCELLED')
@@ -332,21 +326,18 @@ describe('cancelOrder', () => {
     }
     vi.mocked(prisma.order.findUnique).mockResolvedValue(orderWithItems as never)
     let variantUpdateCalled = false
-    vi.mocked(prisma.$transaction).mockImplementation(async (cb: unknown) => {
-      if (typeof cb === 'function') {
-        const tx = {
-          productVariant: {
-            update: vi.fn().mockImplementation(() => {
-              variantUpdateCalled = true
-              return {}
-            }),
-          },
-          coupon: { update: vi.fn().mockResolvedValue({}) },
-          order: { update: vi.fn().mockResolvedValue({ ...orderWithItems, status: 'CANCELLED' }) },
-        }
-        return cb(tx)
+    vi.mocked(prisma.$transaction).mockImplementation(async (cb: (tx: never) => unknown) => {
+      const tx = {
+        productVariant: {
+          update: vi.fn().mockImplementation(() => {
+            variantUpdateCalled = true
+            return {}
+          }),
+        },
+        coupon: { update: vi.fn().mockResolvedValue({}) },
+        order: { update: vi.fn().mockResolvedValue({ ...orderWithItems, status: 'CANCELLED' }) },
       }
-      return cb
+      return cb(tx as never)
     })
 
     const result = await cancelOrder('order-1', 'user-1')
@@ -363,21 +354,18 @@ describe('cancelOrder', () => {
     }
     vi.mocked(prisma.order.findUnique).mockResolvedValue(confirmedOrder as never)
     let variantUpdateCalled = false
-    vi.mocked(prisma.$transaction).mockImplementation(async (cb: unknown) => {
-      if (typeof cb === 'function') {
-        const tx = {
-          productVariant: {
-            update: vi.fn().mockImplementation(() => {
-              variantUpdateCalled = true
-              return {}
-            }),
-          },
-          coupon: { update: vi.fn().mockResolvedValue({}) },
-          order: { update: vi.fn().mockResolvedValue({ ...confirmedOrder, status: 'CANCELLED' }) },
-        }
-        return cb(tx)
+    vi.mocked(prisma.$transaction).mockImplementation(async (cb: (tx: never) => unknown) => {
+      const tx = {
+        productVariant: {
+          update: vi.fn().mockImplementation(() => {
+            variantUpdateCalled = true
+            return {}
+          }),
+        },
+        coupon: { update: vi.fn().mockResolvedValue({}) },
+        order: { update: vi.fn().mockResolvedValue({ ...confirmedOrder, status: 'CANCELLED' }) },
       }
-      return cb
+      return cb(tx as never)
     })
 
     const result = await cancelOrder('order-1', 'user-1')
