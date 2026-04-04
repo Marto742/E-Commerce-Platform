@@ -416,17 +416,20 @@ describe('updateOrderStatus — tracking number', () => {
   it('auto-generates a tracking number when transitioning to SHIPPED', async () => {
     const processingOrder = { ...mockOrder, status: 'PROCESSING', trackingNumber: null, items: [] }
     vi.mocked(prisma.order.findUnique).mockResolvedValue(processingOrder as never)
-
-    let savedData: Record<string, unknown> = {}
-    vi.mocked(prisma.order.update).mockImplementation(async ({ data }: never) => {
-      savedData = data as Record<string, unknown>
-      return { ...processingOrder, status: 'SHIPPED', trackingNumber: data.trackingNumber } as never
-    })
+    vi.mocked(prisma.order.update).mockResolvedValue({
+      ...processingOrder,
+      status: 'SHIPPED',
+    } as never)
 
     const result = await updateOrderStatus('order-1', 'SHIPPED')
     expect(result.status).toBe('SHIPPED')
-    expect(typeof savedData.trackingNumber).toBe('string')
-    expect(savedData.trackingNumber as string).toMatch(/^TRK-[A-F0-9]{8}$/)
+
+    const savedData = vi.mocked(prisma.order.update).mock.calls[0]?.[0]?.data as Record<
+      string,
+      unknown
+    >
+    expect(typeof savedData['trackingNumber']).toBe('string')
+    expect(savedData['trackingNumber'] as string).toMatch(/^TRK-[A-F0-9]{8}$/)
   })
 
   it('does not overwrite an existing tracking number when transitioning to SHIPPED', async () => {
@@ -437,15 +440,18 @@ describe('updateOrderStatus — tracking number', () => {
       items: [],
     }
     vi.mocked(prisma.order.findUnique).mockResolvedValue(processingOrder as never)
-
-    let savedData: Record<string, unknown> = {}
-    vi.mocked(prisma.order.update).mockImplementation(async ({ data }: never) => {
-      savedData = data as Record<string, unknown>
-      return { ...processingOrder, status: 'SHIPPED' } as never
-    })
+    vi.mocked(prisma.order.update).mockResolvedValue({
+      ...processingOrder,
+      status: 'SHIPPED',
+    } as never)
 
     await updateOrderStatus('order-1', 'SHIPPED')
-    expect(savedData.trackingNumber).toBeUndefined()
+
+    const savedData = vi.mocked(prisma.order.update).mock.calls[0]?.[0]?.data as Record<
+      string,
+      unknown
+    >
+    expect(savedData['trackingNumber']).toBeUndefined()
   })
 })
 
