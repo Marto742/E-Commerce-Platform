@@ -6,6 +6,7 @@ import {
   createOrder,
   updateOrderStatus,
   cancelOrder,
+  setTrackingNumber,
 } from './orders.service'
 
 vi.mock('@/lib/prisma', () => ({
@@ -406,5 +407,76 @@ describe('cancelOrder', () => {
       items: [],
     } as never)
     await expect(cancelOrder('order-1', 'user-1')).rejects.toMatchObject({ statusCode: 422 })
+  })
+})
+
+// ─── updateOrderStatus — tracking auto-generation ────────────────────────────
+
+describe('updateOrderStatus — tracking number', () => {
+  it('auto-generates a tracking number when transitioning to SHIPPED', async () => {
+    const processingOrder = { ...mockOrder, status: 'PROCESSING', trackingNumber: null, items: [] }
+    vi.mocked(prisma.order.findUnique).mockResolvedValue(processingOrder as never)
+
+    let savedData: Record<string, unknown> = {}
+    vi.mocked(prisma.order.update).mockImplementation(async ({ data }: never) => {
+      savedData = data as Record<string, unknown>
+      return { ...processingOrder, status: 'SHIPPED', trackingNumber: data.trackingNumber } as never
+    })
+
+    const result = await updateOrderStatus('order-1', 'SHIPPED')
+    expect(result.status).toBe('SHIPPED')
+    expect(typeof savedData.trackingNumber).toBe('string')
+    expect(savedData.trackingNumber as string).toMatch(/^TRK-[A-F0-9]{8}$/)
+  })
+
+  it('does not overwrite an existing tracking number when transitioning to SHIPPED', async () => {
+    const processingOrder = {
+      ...mockOrder,
+      status: 'PROCESSING',
+      trackingNumber: 'TRK-EXISTING1',
+      items: [],
+    }
+    vi.mocked(prisma.order.findUnique).mockResolvedValue(processingOrder as never)
+
+    let savedData: Record<string, unknown> = {}
+    vi.mocked(prisma.order.update).mockImplementation(async ({ data }: never) => {
+      savedData = data as Record<string, unknown>
+      return { ...processingOrder, status: 'SHIPPED' } as never
+    })
+
+    await updateOrderStatus('order-1', 'SHIPPED')
+    expect(savedData.trackingNumber).toBeUndefined()
+  })
+})
+
+// ─── setTrackingNumber ────────────────────────────────────────────────────────
+
+describe('setTrackingNumber', () => {
+  it('sets tracking number on an active order', async () => {
+    vi.mocked(prisma.order.findUnique).mockResolvedValue({
+      ...mockOrder,
+      status: 'CONFIRMED',
+    } as never)
+    vi.mocked(prisma.order.update).mockResolvedValue({
+      ...mockOrder,
+      status: 'CONFIRMED',
+      trackingNumber: 'TRK-CUSTOM01',
+    } as never)
+
+    const result = await setTrackingNumber('order-1', 'TRK-CUSTOM01')
+    expect(result).toMatchObject({ trackingNumber: 'TRK-CUSTOM01' })
+  })
+
+  it('throws notFound when order does not exist', async () => {
+    vi.mocked(prisma.order.findUnique).mockResolvedValue(null)
+    await expect(setTrackingNumber('missing', 'TRK-ABC')).rejects.toMatchObject({ statusCode: 404 })
+  })
+
+  it('throws badRequest when order is CANCELLED', async () => {
+    vi.mocked(prisma.order.findUnique).mockResolvedValue({
+      ...mockOrder,
+      status: 'CANCELLED',
+    } as never)
+    await expect(setTrackingNumber('order-1', 'TRK-ABC')).rejects.toMatchObject({ statusCode: 422 })
   })
 })

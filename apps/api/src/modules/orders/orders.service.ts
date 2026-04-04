@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import { AppError } from '@/utils/AppError'
 import { buildPaginationMeta } from '@/utils/response'
+import { generateTrackingNumber } from '@/utils/tracking'
 import type { CreateOrderInput, OrderQueryInput } from '@repo/validation'
 
 const SHIPPING_COST = 5.0
@@ -225,6 +226,12 @@ export async function updateOrderStatus(id: string, status: string) {
     throw AppError.badRequest(`Cannot transition order from ${order.status} to ${status}`)
   }
 
+  // Auto-assign a tracking number when transitioning to SHIPPED (if not already set)
+  const extraData: Record<string, string> = {}
+  if (status === 'SHIPPED' && !order.trackingNumber) {
+    extraData.trackingNumber = generateTrackingNumber()
+  }
+
   // Restore stock when admin cancels an order that had already been paid
   if (status === 'CANCELLED' && STOCK_HELD_STATUSES.has(order.status)) {
     return prisma.$transaction(async (tx) => {
@@ -250,7 +257,23 @@ export async function updateOrderStatus(id: string, status: string) {
 
   return prisma.order.update({
     where: { id },
-    data: { status: status as never },
+    data: { status: status as never, ...extraData },
+    include: ORDER_DETAIL_INCLUDE,
+  })
+}
+
+// Admin: set or update tracking number on any non-terminal order
+export async function setTrackingNumber(id: string, trackingNumber: string) {
+  const order = await prisma.order.findUnique({ where: { id } })
+  if (!order) throw AppError.notFound('Order not found')
+
+  if (['CANCELLED', 'REFUNDED'].includes(order.status)) {
+    throw AppError.badRequest('Cannot set tracking number on a cancelled or refunded order')
+  }
+
+  return prisma.order.update({
+    where: { id },
+    data: { trackingNumber },
     include: ORDER_DETAIL_INCLUDE,
   })
 }

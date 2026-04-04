@@ -73,3 +73,17 @@ export const cancel: RequestHandler = async (req, res, next) => {
     next(err)
   }
 }
+
+export const updateTracking: RequestHandler = async (req, res, next) => {
+  try {
+    requireUser(req)
+    if (!isAdmin(req)) throw AppError.forbidden()
+    const order = await ordersService.setTrackingNumber(
+      req.params['id'] as string,
+      req.body.trackingNumber as string
+    )
+    sendSuccess(res, order)
+  } catch (err) {
+    next(err)
+  }
+}
