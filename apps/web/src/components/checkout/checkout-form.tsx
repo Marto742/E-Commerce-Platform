@@ -139,6 +139,7 @@ export function CheckoutForm() {
               prefix="shippingAddress"
               register={register}
               errors={errors}
+              watch={watch}
               required
               disabled={isSubmitting}
             />
@@ -165,6 +166,7 @@ export function CheckoutForm() {
                   prefix="billingAddress"
                   register={register}
                   errors={errors}
+                  watch={watch}
                   required
                   disabled={isSubmitting}
                 />
