@@ -117,7 +117,7 @@ describe('POST /v1/auth/register', () => {
 
 describe('POST /v1/auth/login', () => {
   it('returns 200 with tokens on valid credentials', async () => {
-    vi.mocked(authService.login).mockResolvedValue(mockTokenResult)
+    vi.mocked(authService.login).mockResolvedValue(mockTokenResult as never)
 
     const res = await request(app).post('/v1/auth/login').send(validLoginBody)
 
