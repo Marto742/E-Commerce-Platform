@@ -2,9 +2,8 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { ShoppingCart, Menu, X, Store, User, LogOut } from 'lucide-react'
+import { ShoppingCart, Menu, X, Store } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { useSession, signOut } from 'next-auth/react'
 import { cn } from '@repo/ui'
 import { Button } from '@repo/ui'
 import { useCartItemCount } from '@/store/cart'
@@ -21,8 +20,6 @@ export function Navbar() {
   const pathname = usePathname()
   const itemCount = useCartItemCount()
   const { open: openCart } = useCartDrawer()
-  const { status } = useSession()
-  const isLoggedIn = status === 'authenticated'
 
   const [mobileOpen, setMobileOpen] = useState(false)
 
@@ -81,31 +78,12 @@ export function Navbar() {
             )}
           </button>
 
-          {isLoggedIn ? (
-            <div className="hidden items-center gap-1 md:flex">
-              <Link
-                href="/account"
-                className="inline-flex h-8 items-center justify-center rounded-md px-3 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              >
-                <User className="mr-1.5 size-4" />
-                Account
-              </Link>
-              <button
-                onClick={() => signOut({ callbackUrl: '/' })}
-                className="inline-flex h-8 items-center justify-center rounded-md px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              >
-                <LogOut className="mr-1.5 size-4" />
-                Sign out
-              </button>
-            </div>
-          ) : (
-            <Link
-              href="/auth/login"
-              className="hidden h-8 items-center justify-center rounded-md border px-3 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:inline-flex"
-            >
-              Sign in
-            </Link>
-          )}
+          <Link
+            href="/auth/login"
+            className="hidden h-8 items-center justify-center rounded-md border px-3 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:inline-flex"
+          >
+            Sign in
+          </Link>
 
           {/* Mobile menu toggle */}
           <Button
@@ -140,29 +118,12 @@ export function Navbar() {
               {link.label}
             </Link>
           ))}
-          {isLoggedIn ? (
-            <>
-              <Link
-                href="/account"
-                className="mt-1 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground"
-              >
-                Account
-              </Link>
-              <button
-                onClick={() => signOut({ callbackUrl: '/' })}
-                className="mt-1 rounded-md px-3 py-2 text-left text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground"
-              >
-                Sign out
-              </button>
-            </>
-          ) : (
-            <Link
-              href="/auth/login"
-              className="mt-1 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground"
-            >
-              Sign in
-            </Link>
-          )}
+          <Link
+            href="/auth/login"
+            className="mt-1 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground"
+          >
+            Sign in
+          </Link>
         </nav>
       </div>
     </header>
