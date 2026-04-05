@@ -5,6 +5,7 @@ import { AppError } from '@/utils/AppError'
 import { env } from '@/config/env'
 import { hashPassword, comparePassword, dummyHash } from '@/lib/password'
 import { sendEmailVerification } from '@/lib/emails/email-verification'
+import { sendPasswordResetEmail } from '@/lib/emails/password-reset'
 import { logger } from '@/lib/logger'
 import type { RegisterInput } from '@repo/validation'
 
@@ -293,8 +294,17 @@ export async function forgotPassword(email: string) {
   const appUrl = process.env.APP_URL ?? 'http://localhost:3000'
   const resetUrl = `${appUrl}/auth/reset-password?token=${raw}`
 
-  logger.info('Password reset token generated', { userId: user.id, resetUrl })
-  // TODO: send password reset email (task 6.10)
+  sendPasswordResetEmail({
+    userId: user.id,
+    customerEmail: user.email,
+    customerName: `${user.firstName} ${user.lastName}`.trim() || undefined,
+    resetUrl,
+  }).catch((err: unknown) => {
+    logger.error('Failed to send password reset email', {
+      userId: user.id,
+      error: err instanceof Error ? err.message : String(err),
+    })
+  })
 }
 
 export async function resetPassword(rawToken: string, newPassword: string) {
