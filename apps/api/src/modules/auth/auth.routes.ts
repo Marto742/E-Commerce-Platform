@@ -15,6 +15,22 @@ router.post('/login', authLimiter, validate(loginSchema), controller.login)
 // POST /auth/refresh — exchange refresh token for a new access token (rotates refresh)
 router.post('/refresh', authLimiter, validate(refreshTokenSchema), controller.refreshToken)
 
+// POST /auth/verify-email — consume a verification token, activate the account
+router.post(
+  '/verify-email',
+  authLimiter,
+  validate(refreshTokenSchema), // reuses { token: string } shape
+  controller.verifyEmail
+)
+
+// POST /auth/resend-verification — send a new verification email
+router.post(
+  '/resend-verification',
+  authLimiter,
+  validate(loginSchema.pick({ email: true })),
+  controller.resendVerification
+)
+
 // POST /auth/oauth — find-or-create user from OAuth provider, issue our tokens
 router.post('/oauth', authLimiter, validate(oauthLoginSchema), controller.oauthLogin)
 

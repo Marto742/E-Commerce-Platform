@@ -31,6 +31,29 @@ export const refreshToken: RequestHandler = async (req, res, next) => {
   }
 }
 
+export const verifyEmail: RequestHandler = async (req, res, next) => {
+  try {
+    const { token } = req.body as { token: string }
+    await authService.verifyEmail(token)
+    sendSuccess(res, { message: 'Email verified successfully' })
+  } catch (err) {
+    next(err)
+  }
+}
+
+export const resendVerification: RequestHandler = async (req, res, next) => {
+  try {
+    const { email } = req.body as { email: string }
+    await authService.resendVerification(email)
+    // Always 200 to avoid email enumeration
+    sendSuccess(res, {
+      message: 'If that email exists and is unverified, a new link has been sent',
+    })
+  } catch (err) {
+    next(err)
+  }
+}
+
 export const oauthLogin: RequestHandler = async (req, res, next) => {
   try {
     const result = await authService.oauthLogin(req.body)

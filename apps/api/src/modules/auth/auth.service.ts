@@ -4,6 +4,8 @@ import crypto from 'crypto'
 import { prisma } from '@/lib/prisma'
 import { AppError } from '@/utils/AppError'
 import { env } from '@/config/env'
+import { sendEmailVerification } from '@/lib/emails/email-verification'
+import { logger } from '@/lib/logger'
 import type { RegisterInput } from '@repo/validation'
 
 const SALT_ROUNDS = 12
@@ -14,6 +16,19 @@ function signAccessToken(userId: string, role: string): string {
   return jwt.sign({ sub: userId, role }, env.JWT_ACCESS_SECRET, {
     expiresIn: env.JWT_ACCESS_EXPIRES_IN as jwt.SignOptions['expiresIn'],
   })
+}
+
+async function createVerificationToken(userId: string): Promise<string> {
+  // Invalidate any existing tokens for this user first
+  await prisma.emailVerificationToken.deleteMany({ where: { userId } })
+
+  const raw = crypto.randomBytes(32).toString('hex')
+  const tokenHash = crypto.createHash('sha256').update(raw).digest('hex')
+  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
+
+  await prisma.emailVerificationToken.create({ data: { userId, tokenHash, expiresAt } })
+
+  return raw
 }
 
 async function createRefreshToken(userId: string): Promise<string> {
@@ -54,7 +69,70 @@ export async function register(data: RegisterInput) {
     },
   })
 
+  // Send verification email fire-and-forget
+  const verificationToken = await createVerificationToken(user.id)
+  const appUrl = process.env.APP_URL ?? 'http://localhost:3000'
+  const verificationUrl = `${appUrl}/auth/verify-email?token=${verificationToken}`
+
+  sendEmailVerification({
+    userId: user.id,
+    customerEmail: user.email,
+    customerName: `${user.firstName} ${user.lastName}`.trim() || undefined,
+    verificationUrl,
+  }).catch((err: unknown) => {
+    logger.error('Failed to send verification email', {
+      userId: user.id,
+      error: err instanceof Error ? err.message : String(err),
+    })
+  })
+
   return user
+}
+
+// ─── Email verification ───────────────────────────────────────────────────────
+
+export async function verifyEmail(rawToken: string) {
+  const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex')
+
+  const stored = await prisma.emailVerificationToken.findUnique({
+    where: { tokenHash },
+    include: { user: { select: { id: true, status: true, emailVerifiedAt: true } } },
+  })
+
+  if (!stored || stored.expiresAt < new Date()) {
+    throw AppError.badRequest('Verification link is invalid or has expired')
+  }
+  if (stored.user.emailVerifiedAt) {
+    // Already verified — idempotent success
+    await prisma.emailVerificationToken.delete({ where: { tokenHash } })
+    return
+  }
+
+  await prisma.$transaction([
+    prisma.user.update({
+      where: { id: stored.userId },
+      data: { emailVerifiedAt: new Date(), status: 'ACTIVE' },
+    }),
+    prisma.emailVerificationToken.delete({ where: { tokenHash } }),
+  ])
+}
+
+export async function resendVerification(email: string) {
+  const user = await prisma.user.findUnique({ where: { email: email.toLowerCase() } })
+
+  // Always respond with success to avoid email enumeration
+  if (!user || user.emailVerifiedAt || user.status === 'DELETED') return
+
+  const verificationToken = await createVerificationToken(user.id)
+  const appUrl = process.env.APP_URL ?? 'http://localhost:3000'
+  const verificationUrl = `${appUrl}/auth/verify-email?token=${verificationToken}`
+
+  await sendEmailVerification({
+    userId: user.id,
+    customerEmail: user.email,
+    customerName: `${user.firstName} ${user.lastName}`.trim() || undefined,
+    verificationUrl,
+  })
 }
 
 // ─── Login ────────────────────────────────────────────────────────────────────
