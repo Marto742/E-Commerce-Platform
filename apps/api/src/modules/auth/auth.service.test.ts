@@ -23,11 +23,10 @@ vi.mock('@/lib/prisma', () => ({
   },
 }))
 
-vi.mock('bcryptjs', () => ({
-  default: {
-    hash: vi.fn().mockResolvedValue('hashed_password'),
-    compare: vi.fn(),
-  },
+vi.mock('@/lib/password', () => ({
+  hashPassword: vi.fn().mockResolvedValue('hashed_password'),
+  comparePassword: vi.fn(),
+  dummyHash: vi.fn().mockResolvedValue('hashed_password'),
 }))
 
 vi.mock('jsonwebtoken', () => ({
@@ -43,7 +42,7 @@ vi.mock('@/config/env', () => ({
   },
 }))
 
-import bcrypt from 'bcryptjs'
+import { comparePassword } from '@/lib/password'
 import { register, login, oauthLogin, refresh, logout } from './auth.service'
 
 // ─── Fixtures ─────────────────────────────────────────────────────────────────
@@ -122,7 +121,7 @@ describe('register', () => {
 describe('login', () => {
   it('returns accessToken, refreshToken, and user on valid credentials', async () => {
     vi.mocked(prisma.user.findUnique).mockResolvedValue(mockUser as never)
-    vi.mocked(bcrypt.compare).mockResolvedValue(true as never)
+    vi.mocked(comparePassword).mockResolvedValue(true as never)
     vi.mocked(prisma.refreshToken.create).mockResolvedValue({} as never)
 
     const result = await login('test@example.com', 'Password1')
@@ -143,7 +142,7 @@ describe('login', () => {
 
   it('throws 401 when password is wrong', async () => {
     vi.mocked(prisma.user.findUnique).mockResolvedValue(mockUser as never)
-    vi.mocked(bcrypt.compare).mockResolvedValue(false as never)
+    vi.mocked(comparePassword).mockResolvedValue(false as never)
 
     await expect(login('test@example.com', 'WrongPass')).rejects.toMatchObject({ statusCode: 401 })
   })

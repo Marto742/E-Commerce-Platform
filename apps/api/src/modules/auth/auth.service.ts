@@ -1,14 +1,12 @@
-import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import crypto from 'crypto'
 import { prisma } from '@/lib/prisma'
 import { AppError } from '@/utils/AppError'
 import { env } from '@/config/env'
+import { hashPassword, comparePassword, dummyHash } from '@/lib/password'
 import { sendEmailVerification } from '@/lib/emails/email-verification'
 import { logger } from '@/lib/logger'
 import type { RegisterInput } from '@repo/validation'
-
-const SALT_ROUNDS = 12
 
 // ─── Token helpers ────────────────────────────────────────────────────────────
 
@@ -49,7 +47,7 @@ export async function register(data: RegisterInput) {
   })
   if (existing) throw new AppError(409, 'CONFLICT', 'Email already registered')
 
-  const passwordHash = await bcrypt.hash(data.password, SALT_ROUNDS)
+  const passwordHash = await hashPassword(data.password)
 
   const user = await prisma.user.create({
     data: {
@@ -142,7 +140,7 @@ export async function login(email: string, password: string) {
 
   // Constant-time comparison path — don't reveal whether email exists
   if (!user) {
-    await bcrypt.hash(password, SALT_ROUNDS) // dummy work
+    await dummyHash(password) // constant-time dummy work
     throw AppError.unauthorized('Invalid email or password')
   }
 
@@ -150,11 +148,11 @@ export async function login(email: string, password: string) {
     throw new AppError(403, 'ACCOUNT_SUSPENDED', 'Your account has been suspended')
   }
   if (user.status === 'DELETED') {
-    await bcrypt.hash(password, SALT_ROUNDS) // dummy work
+    await dummyHash(password) // constant-time dummy work
     throw AppError.unauthorized('Invalid email or password')
   }
 
-  const valid = await bcrypt.compare(password, user.passwordHash)
+  const valid = await comparePassword(password, user.passwordHash)
   if (!valid) throw AppError.unauthorized('Invalid email or password')
 
   const accessToken = signAccessToken(user.id, user.role)
