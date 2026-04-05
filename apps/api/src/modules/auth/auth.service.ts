@@ -272,3 +272,55 @@ export async function logout(rawToken: string) {
   const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex')
   await prisma.refreshToken.deleteMany({ where: { tokenHash } })
 }
+
+// ─── Password reset ───────────────────────────────────────────────────────────
+
+export async function forgotPassword(email: string) {
+  const user = await prisma.user.findUnique({ where: { email: email.toLowerCase() } })
+
+  // Always respond with success to avoid email enumeration
+  if (!user || user.status === 'DELETED') return
+
+  // Invalidate any existing reset tokens for this user
+  await prisma.passwordResetToken.deleteMany({ where: { userId: user.id } })
+
+  const raw = crypto.randomBytes(32).toString('hex')
+  const tokenHash = crypto.createHash('sha256').update(raw).digest('hex')
+  const expiresAt = new Date(Date.now() + 60 * 60 * 1000) // 1 hour
+
+  await prisma.passwordResetToken.create({ data: { userId: user.id, tokenHash, expiresAt } })
+
+  const appUrl = process.env.APP_URL ?? 'http://localhost:3000'
+  const resetUrl = `${appUrl}/auth/reset-password?token=${raw}`
+
+  logger.info('Password reset token generated', { userId: user.id, resetUrl })
+  // TODO: send password reset email (task 6.10)
+}
+
+export async function resetPassword(rawToken: string, newPassword: string) {
+  const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex')
+
+  const stored = await prisma.passwordResetToken.findUnique({
+    where: { tokenHash },
+    include: { user: { select: { id: true, status: true } } },
+  })
+
+  if (!stored || stored.expiresAt < new Date()) {
+    throw AppError.badRequest('Reset link is invalid or has expired')
+  }
+  if (stored.user.status === 'DELETED') {
+    throw AppError.badRequest('Reset link is invalid or has expired')
+  }
+
+  const passwordHash = await hashPassword(newPassword)
+
+  await prisma.$transaction([
+    prisma.user.update({
+      where: { id: stored.userId },
+      data: { passwordHash },
+    }),
+    prisma.passwordResetToken.delete({ where: { tokenHash } }),
+    // Invalidate all refresh tokens so existing sessions are logged out
+    prisma.refreshToken.deleteMany({ where: { userId: stored.userId } }),
+  ])
+}

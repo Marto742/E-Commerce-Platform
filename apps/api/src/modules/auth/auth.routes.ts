@@ -1,7 +1,14 @@
 import { Router } from 'express'
 import { validate } from '@/middleware/validate'
 import { authLimiter } from '@/middleware/rateLimiter'
-import { registerSchema, loginSchema, refreshTokenSchema, oauthLoginSchema } from '@repo/validation'
+import {
+  registerSchema,
+  loginSchema,
+  refreshTokenSchema,
+  oauthLoginSchema,
+  forgotPasswordSchema,
+  resetPasswordSchema,
+} from '@repo/validation'
 import * as controller from './auth.controller'
 
 const router: Router = Router()
@@ -36,5 +43,16 @@ router.post('/oauth', authLimiter, validate(oauthLoginSchema), controller.oauthL
 
 // POST /auth/logout — invalidate the current refresh token
 router.post('/logout', controller.logout)
+
+// POST /auth/forgot-password — request a password reset email
+router.post(
+  '/forgot-password',
+  authLimiter,
+  validate(forgotPasswordSchema),
+  controller.forgotPassword
+)
+
+// POST /auth/reset-password — consume reset token and set new password
+router.post('/reset-password', authLimiter, validate(resetPasswordSchema), controller.resetPassword)
 
 export default router

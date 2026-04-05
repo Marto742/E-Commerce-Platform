@@ -18,6 +18,8 @@ vi.mock('@/modules/auth/auth.service', () => ({
   verifyEmail: vi.fn(),
   resendVerification: vi.fn(),
   oauthLogin: vi.fn(),
+  forgotPassword: vi.fn(),
+  resetPassword: vi.fn(),
 }))
 
 vi.mock('@/middleware/rateLimiter', () => ({
@@ -246,5 +248,58 @@ describe('POST /v1/auth/logout', () => {
   it('returns 200 even without a token (graceful logout)', async () => {
     const res = await request(app).post('/v1/auth/logout').send({})
     expect(res.status).toBe(200)
+  })
+})
+
+// ─── POST /v1/auth/forgot-password ───────────────────────────────────────────
+
+describe('POST /v1/auth/forgot-password', () => {
+  it('returns 200 regardless of whether email exists (anti-enumeration)', async () => {
+    vi.mocked(authService.forgotPassword).mockResolvedValue(undefined)
+
+    const res = await request(app)
+      .post('/v1/auth/forgot-password')
+      .send({ email: 'anyone@example.com' })
+
+    expect(res.status).toBe(200)
+    expect(authService.forgotPassword).toHaveBeenCalledWith('anyone@example.com')
+  })
+
+  it('returns 422 when email is invalid', async () => {
+    const res = await request(app).post('/v1/auth/forgot-password').send({ email: 'not-an-email' })
+    expect(res.status).toBe(422)
+  })
+})
+
+// ─── POST /v1/auth/reset-password ────────────────────────────────────────────
+
+describe('POST /v1/auth/reset-password', () => {
+  it('returns 200 on valid token and password', async () => {
+    vi.mocked(authService.resetPassword).mockResolvedValue(undefined)
+
+    const res = await request(app)
+      .post('/v1/auth/reset-password')
+      .send({ token: 'valid_token', password: 'NewPassword1' })
+
+    expect(res.status).toBe(200)
+  })
+
+  it('returns 422 when token is missing', async () => {
+    const res = await request(app)
+      .post('/v1/auth/reset-password')
+      .send({ password: 'NewPassword1' })
+    expect(res.status).toBe(422)
+  })
+
+  it('returns 422 when token is expired', async () => {
+    const { AppError } = await import('@/utils/AppError')
+    vi.mocked(authService.resetPassword).mockRejectedValue(
+      AppError.badRequest('Reset link is invalid or has expired')
+    )
+
+    const res = await request(app)
+      .post('/v1/auth/reset-password')
+      .send({ token: 'expired', password: 'NewPassword1' })
+    expect(res.status).toBe(422)
   })
 })

@@ -72,3 +72,24 @@ export const logout: RequestHandler = async (req, res, next) => {
     next(err)
   }
 }
+
+export const forgotPassword: RequestHandler = async (req, res, next) => {
+  try {
+    const { email } = req.body as { email: string }
+    await authService.forgotPassword(email)
+    // Always 200 to avoid email enumeration
+    sendSuccess(res, { message: 'If that email is registered, a reset link has been sent' })
+  } catch (err) {
+    next(err)
+  }
+}
+
+export const resetPassword: RequestHandler = async (req, res, next) => {
+  try {
+    const { token, password } = req.body as { token: string; password: string }
+    await authService.resetPassword(token, password)
+    sendSuccess(res, { message: 'Password reset successfully' })
+  } catch (err) {
+    next(err)
+  }
+}

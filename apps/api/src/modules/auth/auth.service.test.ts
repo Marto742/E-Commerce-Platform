@@ -20,6 +20,13 @@ vi.mock('@/lib/prisma', () => ({
       create: vi.fn().mockResolvedValue({}),
       deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
     },
+    passwordResetToken: {
+      create: vi.fn().mockResolvedValue({}),
+      findUnique: vi.fn(),
+      delete: vi.fn(),
+      deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
+    },
+    $transaction: vi.fn((ops: unknown[]) => Promise.all(ops)),
   },
 }))
 
@@ -43,7 +50,15 @@ vi.mock('@/config/env', () => ({
 }))
 
 import { comparePassword } from '@/lib/password'
-import { register, login, oauthLogin, refresh, logout } from './auth.service'
+import {
+  register,
+  login,
+  oauthLogin,
+  refresh,
+  logout,
+  forgotPassword,
+  resetPassword,
+} from './auth.service'
 
 // ─── Fixtures ─────────────────────────────────────────────────────────────────
 
@@ -267,5 +282,75 @@ describe('logout', () => {
     await logout('raw_refresh_token')
 
     expect(prisma.refreshToken.deleteMany).toHaveBeenCalledOnce()
+  })
+})
+
+// ─── forgotPassword ───────────────────────────────────────────────────────────
+
+describe('forgotPassword', () => {
+  it('creates a reset token for a valid user', async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue(mockUser as never)
+
+    await forgotPassword('test@example.com')
+
+    expect(prisma.passwordResetToken.deleteMany).toHaveBeenCalledOnce()
+    expect(prisma.passwordResetToken.create).toHaveBeenCalledOnce()
+  })
+
+  it('does nothing silently when user does not exist (anti-enumeration)', async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue(null)
+
+    await forgotPassword('nobody@example.com')
+
+    expect(prisma.passwordResetToken.create).not.toHaveBeenCalled()
+  })
+
+  it('does nothing silently for DELETED users', async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({ ...mockUser, status: 'DELETED' } as never)
+
+    await forgotPassword('test@example.com')
+
+    expect(prisma.passwordResetToken.create).not.toHaveBeenCalled()
+  })
+})
+
+// ─── resetPassword ────────────────────────────────────────────────────────────
+
+describe('resetPassword', () => {
+  const mockStoredToken = {
+    tokenHash: 'hashed_token',
+    userId: 'user-1',
+    expiresAt: new Date(Date.now() + 60_000),
+    user: { id: 'user-1', status: 'ACTIVE' },
+  }
+
+  it('updates the password and invalidates all sessions', async () => {
+    vi.mocked(prisma.passwordResetToken.findUnique).mockResolvedValue(mockStoredToken as never)
+    vi.mocked(prisma.user.update).mockResolvedValue(mockUser as never)
+    vi.mocked(prisma.passwordResetToken.delete).mockResolvedValue({} as never)
+    vi.mocked(prisma.refreshToken.deleteMany).mockResolvedValue({ count: 1 })
+
+    await resetPassword('raw_token', 'NewPassword1')
+
+    expect(prisma.$transaction).toHaveBeenCalledOnce()
+  })
+
+  it('throws 422 when token is not found', async () => {
+    vi.mocked(prisma.passwordResetToken.findUnique).mockResolvedValue(null)
+
+    await expect(resetPassword('bad_token', 'NewPassword1')).rejects.toMatchObject({
+      statusCode: 422,
+    })
+  })
+
+  it('throws 422 when token is expired', async () => {
+    vi.mocked(prisma.passwordResetToken.findUnique).mockResolvedValue({
+      ...mockStoredToken,
+      expiresAt: new Date(Date.now() - 1000),
+    } as never)
+
+    await expect(resetPassword('expired_token', 'NewPassword1')).rejects.toMatchObject({
+      statusCode: 422,
+    })
   })
 })
