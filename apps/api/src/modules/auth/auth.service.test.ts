@@ -16,6 +16,10 @@ vi.mock('@/lib/prisma', () => ({
       delete: vi.fn(),
       deleteMany: vi.fn(),
     },
+    emailVerificationToken: {
+      create: vi.fn().mockResolvedValue({}),
+      deleteMany: vi.fn().mockResolvedValue({ count: 0 }),
+    },
   },
 }))
 
@@ -227,7 +231,7 @@ describe('oauthLogin', () => {
 
     expect(prisma.user.create).toHaveBeenCalledOnce()
     expect(result.accessToken).toBe('mock_access_token')
-    expect(result.user.email).toBe(mockUser.email)
+    expect(result.user.email).toBe(oauthData.email)
   })
 
   it('returns tokens for an existing user without creating a new one', async () => {
@@ -245,6 +249,7 @@ describe('oauthLogin', () => {
     vi.mocked(prisma.user.findUnique).mockResolvedValue({
       ...mockUser,
       status: 'SUSPENDED',
+      avatarUrl: 'https://existing.com/avatar.jpg', // has avatar → skips update branch
     } as never)
 
     await expect(oauthLogin(oauthData)).rejects.toMatchObject({
