@@ -9,7 +9,7 @@ import { prisma } from '@/lib/prisma'
 
 vi.mock('@/lib/prisma', () => ({
   prisma: {
-    user: { findUnique: vi.fn(), create: vi.fn() },
+    user: { findUnique: vi.fn(), create: vi.fn(), update: vi.fn() },
     refreshToken: {
       create: vi.fn(),
       findUnique: vi.fn(),
@@ -40,7 +40,7 @@ vi.mock('@/config/env', () => ({
 }))
 
 import bcrypt from 'bcryptjs'
-import { register, login, refresh, logout } from './auth.service'
+import { register, login, oauthLogin, refresh, logout } from './auth.service'
 
 // ─── Fixtures ─────────────────────────────────────────────────────────────────
 
@@ -200,6 +200,57 @@ describe('refresh', () => {
     } as never)
 
     await expect(refresh('expired_token')).rejects.toMatchObject({ statusCode: 401 })
+  })
+})
+
+// ─── oauthLogin ───────────────────────────────────────────────────────────────
+
+describe('oauthLogin', () => {
+  const oauthData = {
+    provider: 'google' as const,
+    providerId: 'google-123',
+    email: 'oauth@example.com',
+    firstName: 'Jane',
+    lastName: 'Doe',
+    avatarUrl: 'https://example.com/avatar.jpg',
+  }
+
+  it('creates a new user and returns tokens for a first-time OAuth login', async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue(null)
+    vi.mocked(prisma.user.create).mockResolvedValue({
+      ...mockUser,
+      email: oauthData.email,
+    } as never)
+    vi.mocked(prisma.refreshToken.create).mockResolvedValue({} as never)
+
+    const result = await oauthLogin(oauthData)
+
+    expect(prisma.user.create).toHaveBeenCalledOnce()
+    expect(result.accessToken).toBe('mock_access_token')
+    expect(result.user.email).toBe(mockUser.email)
+  })
+
+  it('returns tokens for an existing user without creating a new one', async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue(mockUser as never)
+    vi.mocked(prisma.user.update).mockResolvedValue(mockUser as never)
+    vi.mocked(prisma.refreshToken.create).mockResolvedValue({} as never)
+
+    const result = await oauthLogin({ ...oauthData, avatarUrl: null })
+
+    expect(prisma.user.create).not.toHaveBeenCalled()
+    expect(result.accessToken).toBe('mock_access_token')
+  })
+
+  it('throws 403 ACCOUNT_SUSPENDED for suspended OAuth user', async () => {
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      ...mockUser,
+      status: 'SUSPENDED',
+    } as never)
+
+    await expect(oauthLogin(oauthData)).rejects.toMatchObject({
+      statusCode: 403,
+      code: 'ACCOUNT_SUSPENDED',
+    })
   })
 })
 

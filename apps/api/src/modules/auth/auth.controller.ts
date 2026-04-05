@@ -31,6 +31,15 @@ export const refreshToken: RequestHandler = async (req, res, next) => {
   }
 }
 
+export const oauthLogin: RequestHandler = async (req, res, next) => {
+  try {
+    const result = await authService.oauthLogin(req.body)
+    sendSuccess(res, result)
+  } catch (err) {
+    next(err)
+  }
+}
+
 export const logout: RequestHandler = async (req, res, next) => {
   try {
     const { token } = req.body as { token?: string }

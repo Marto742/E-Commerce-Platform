@@ -1,5 +1,7 @@
 import NextAuth from 'next-auth'
 import Credentials from 'next-auth/providers/credentials'
+import Google from 'next-auth/providers/google'
+import GitHub from 'next-auth/providers/github'
 
 const API_BASE = process.env.API_URL ?? 'http://localhost:4000/v1'
 
@@ -38,6 +40,33 @@ function decodeTokenExpiry(token: string): number {
   }
 }
 
+async function exchangeOAuthToken(
+  provider: string,
+  providerId: string,
+  profile: { email?: string | null; name?: string | null; image?: string | null }
+) {
+  const [firstName = '', ...rest] = (profile.name ?? '').split(' ')
+  const lastName = rest.join(' ')
+
+  const res = await fetch(`${API_BASE}/auth/oauth`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      provider,
+      providerId,
+      email: profile.email,
+      firstName: firstName || 'User',
+      lastName,
+      avatarUrl: profile.image ?? null,
+    }),
+  })
+
+  if (!res.ok) return null
+
+  const { data } = (await res.json()) as LoginResponse
+  return data
+}
+
 async function refreshAccessToken(refreshToken: string) {
   const res = await fetch(`${API_BASE}/auth/refresh`, {
     method: 'POST',
@@ -53,6 +82,8 @@ async function refreshAccessToken(refreshToken: string) {
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
+    Google,
+    GitHub,
     Credentials({
       credentials: {
         email: { label: 'Email', type: 'email' },
@@ -93,8 +124,28 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   ],
 
   callbacks: {
-    async jwt({ token, user }) {
-      // Initial sign-in: persist everything from authorize()
+    async jwt({ token, user, account }) {
+      // OAuth sign-in: exchange provider token for our own JWT pair
+      if (account && account.provider !== 'credentials' && user) {
+        const result = await exchangeOAuthToken(account.provider, account.providerAccountId, user)
+        if (result) {
+          return {
+            ...token,
+            id: result.user.id,
+            firstName: result.user.firstName,
+            lastName: result.user.lastName,
+            role: result.user.role,
+            status: result.user.status,
+            avatarUrl: result.user.avatarUrl,
+            accessToken: result.accessToken,
+            refreshToken: result.refreshToken,
+            accessTokenExpires: decodeTokenExpiry(result.accessToken),
+          }
+        }
+        return { ...token, error: 'OAuthExchangeFailed' }
+      }
+
+      // Credentials sign-in: persist everything from authorize()
       if (user) {
         return {
           ...token,

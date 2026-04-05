@@ -48,3 +48,14 @@ export const changePasswordSchema = z.object({
 })
 
 export type ChangePasswordInput = z.infer<typeof changePasswordSchema>
+
+export const oauthLoginSchema = z.object({
+  provider: z.enum(['google', 'github']),
+  providerId: z.string().min(1),
+  email: z.string().email(),
+  firstName: z.string().min(1).max(100),
+  lastName: z.string().max(100).default(''),
+  avatarUrl: z.string().url().nullable().optional(),
+})
+
+export type OAuthLoginInput = z.infer<typeof oauthLoginSchema>

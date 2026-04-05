@@ -6,6 +6,7 @@ export {
   resetPasswordSchema,
   refreshTokenSchema,
   changePasswordSchema,
+  oauthLoginSchema,
 } from './schemas/auth'
 export type {
   RegisterInput,
@@ -14,6 +15,7 @@ export type {
   ResetPasswordInput,
   RefreshTokenInput,
   ChangePasswordInput,
+  OAuthLoginInput,
 } from './schemas/auth'
 
 // User
