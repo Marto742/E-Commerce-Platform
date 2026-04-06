@@ -12,6 +12,7 @@ import paymentsRouter from '@/modules/payments/payments.routes'
 import couponsRouter from '@/modules/coupons/coupons.routes'
 import shippingRouter from '@/modules/shipping/shipping.routes'
 import authRouter from '@/modules/auth/auth.routes'
+import usersRouter from '@/modules/users/users.routes'
 
 const router: Router = Router()
 
@@ -25,7 +26,7 @@ router.use('/', docsRouter)
 router.use('/auth', authRouter)
 
 // ── Users ─────────────────────────────────────────────────
-// router.use('/users', usersRouter)        // Phase 3
+router.use('/users', usersRouter)
 
 // ── Products & Catalog ────────────────────────────────────
 router.use('/products', productsRouter)
