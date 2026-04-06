@@ -203,5 +203,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     signIn: '/auth/login',
   },
 
-  session: { strategy: 'jwt' },
+  session: {
+    strategy: 'jwt',
+    // Match the API refresh token lifetime (7 days).
+    // NextAuth will re-invoke the jwt callback before this expires,
+    // giving the refresh flow a chance to rotate tokens.
+    maxAge: 7 * 24 * 60 * 60, // 7 days in seconds
+    // Roll the session cookie expiry forward on each active request.
+    updateAge: 24 * 60 * 60, // 24 hours
+  },
 })

@@ -7,6 +7,7 @@ import { Footer } from '@/components/layout/footer'
 import { CartDrawerProvider } from '@/components/cart/cart-drawer-context'
 import { CartDrawer } from '@/components/cart/cart-drawer'
 import { SessionProvider } from '@/components/providers/session-provider'
+import { SessionGuard } from '@/components/providers/session-guard'
 import { Devtools } from './devtools'
 import './globals.css'
 
@@ -82,6 +83,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               </CartDrawerProvider>
             </CartProvider>
             {process.env.NODE_ENV !== 'production' && <Devtools />}
+            <SessionGuard />
           </QueryProvider>
         </SessionProvider>
       </body>
