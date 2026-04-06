@@ -3,43 +3,8 @@
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { ShoppingBag, ChevronRight, Package } from 'lucide-react'
-import { cn } from '@repo/ui'
 import type { Order } from '@/app/orders/page'
-
-// ─── Status badge ─────────────────────────────────────────────────────────────
-
-const STATUS_STYLES: Record<string, string> = {
-  PENDING: 'bg-yellow-100 text-yellow-800',
-  CONFIRMED: 'bg-blue-100 text-blue-800',
-  PROCESSING: 'bg-indigo-100 text-indigo-800',
-  SHIPPED: 'bg-purple-100 text-purple-800',
-  DELIVERED: 'bg-green-100 text-green-800',
-  CANCELLED: 'bg-red-100 text-red-800',
-  REFUNDED: 'bg-gray-100 text-gray-600',
-}
-
-const STATUS_LABEL: Record<string, string> = {
-  PENDING: 'Pending',
-  CONFIRMED: 'Confirmed',
-  PROCESSING: 'Processing',
-  SHIPPED: 'Shipped',
-  DELIVERED: 'Delivered',
-  CANCELLED: 'Cancelled',
-  REFUNDED: 'Refunded',
-}
-
-function StatusBadge({ status }: { status: string }) {
-  return (
-    <span
-      className={cn(
-        'inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium',
-        STATUS_STYLES[status] ?? 'bg-gray-100 text-gray-600'
-      )}
-    >
-      {STATUS_LABEL[status] ?? status}
-    </span>
-  )
-}
+import { OrderStatusBadge } from '@/components/account/order-status-badge'
 
 // ─── Empty state ──────────────────────────────────────────────────────────────
 
@@ -133,7 +98,7 @@ function OrderCard({ order }: { order: Order }) {
         </div>
 
         <div className="flex items-center gap-3">
-          <StatusBadge status={order.status} />
+          <OrderStatusBadge status={order.status} />
           <ChevronRight className="h-4 w-4 text-gray-400 transition-transform group-hover:translate-x-0.5" />
         </div>
       </div>
