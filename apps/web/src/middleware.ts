@@ -5,6 +5,8 @@ import { NextResponse } from 'next/server'
 const PROTECTED_PREFIXES = ['/account', '/orders', '/checkout']
 
 // Routes only accessible when NOT logged in
+// Note: /auth/verify-email is intentionally NOT here — logged-in users may
+// click the email link and should be able to complete verification.
 const AUTH_ONLY_PREFIXES = ['/auth/login', '/auth/register']
 
 export default auth((req) => {
