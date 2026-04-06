@@ -8,6 +8,7 @@ import { errorHandler } from '@/middleware/error'
 import { requestId } from '@/middleware/requestId'
 import { requestLogger } from '@/middleware/requestLogger'
 import { globalLimiter } from '@/middleware/rateLimiter'
+import { csrfProtection } from '@/middleware/csrf'
 import * as webhookController from '@/modules/payments/payments.controller'
 
 export function createApp(): Application {
@@ -20,7 +21,37 @@ export function createApp(): Application {
   app.use(requestId)
 
   // ── Security headers ────────────────────────────────────
-  app.use(helmet())
+  app.use(
+    helmet({
+      // Prevent clickjacking
+      frameguard: { action: 'deny' },
+      // Strict MIME sniffing
+      noSniff: true,
+      // Force HTTPS in production
+      hsts:
+        env.NODE_ENV === 'production'
+          ? { maxAge: 31_536_000, includeSubDomains: true, preload: true }
+          : false,
+      // Restrict referrer info
+      referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+      // Minimal CSP — tightened per-route by the app layer if needed
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          scriptSrc: ["'self'"],
+          styleSrc: ["'self'", "'unsafe-inline'"],
+          imgSrc: ["'self'", 'data:', 'https:'],
+          connectSrc: ["'self'"],
+          fontSrc: ["'self'"],
+          objectSrc: ["'none'"],
+          frameSrc: ["'none'"],
+          baseUri: ["'self'"],
+          formAction: ["'self'"],
+          upgradeInsecureRequests: env.NODE_ENV === 'production' ? [] : null,
+        },
+      },
+    })
+  )
 
   // ── CORS ────────────────────────────────────────────────
   app.use(
@@ -28,7 +59,8 @@ export function createApp(): Application {
       origin: env.CORS_ORIGIN.split(',').map((o) => o.trim()),
       credentials: true,
       methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization', 'X-Session-ID'],
+      allowedHeaders: ['Content-Type', 'Authorization', 'X-Session-ID', 'X-Requested-With'],
+      exposedHeaders: ['X-Request-ID'],
     })
   )
 
@@ -54,6 +86,9 @@ export function createApp(): Application {
   // writeLimiter:    30 req/min    → applied on cart, orders, reviews, wishlist
   // checkoutLimiter:  5 req/min   → applied in Phase 5 on /checkout routes
   app.use(globalLimiter)
+
+  // ── CSRF protection (mutation endpoints only) ───────────
+  app.use(csrfProtection)
 
   // ── API routes (all under /v1) ───────────────────────────
   app.use('/v1', router)
