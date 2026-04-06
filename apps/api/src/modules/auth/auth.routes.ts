@@ -1,6 +1,12 @@
 import { Router } from 'express'
 import { validate } from '@/middleware/validate'
-import { authLimiter } from '@/middleware/rateLimiter'
+import {
+  authLimiter,
+  loginLimiter,
+  registerLimiter,
+  passwordResetLimiter,
+  resendVerificationLimiter,
+} from '@/middleware/rateLimiter'
 import {
   registerSchema,
   loginSchema,
@@ -13,16 +19,16 @@ import * as controller from './auth.controller'
 
 const router: Router = Router()
 
-// POST /auth/register — create a new customer account
-router.post('/register', authLimiter, validate(registerSchema), controller.register)
+// POST /auth/register — 5 accounts/hr per IP
+router.post('/register', registerLimiter, validate(registerSchema), controller.register)
 
-// POST /auth/login — exchange email + password for access + refresh tokens
-router.post('/login', authLimiter, validate(loginSchema), controller.login)
+// POST /auth/login — 5 failures/15min per IP (successes not counted)
+router.post('/login', loginLimiter, validate(loginSchema), controller.login)
 
-// POST /auth/refresh — exchange refresh token for a new access token (rotates refresh)
+// POST /auth/refresh — general auth limit (20/15min)
 router.post('/refresh', authLimiter, validate(refreshTokenSchema), controller.refreshToken)
 
-// POST /auth/verify-email — consume a verification token, activate the account
+// POST /auth/verify-email — general auth limit
 router.post(
   '/verify-email',
   authLimiter,
@@ -30,29 +36,29 @@ router.post(
   controller.verifyEmail
 )
 
-// POST /auth/resend-verification — send a new verification email
+// POST /auth/resend-verification — 3 emails/hr per IP
 router.post(
   '/resend-verification',
-  authLimiter,
+  resendVerificationLimiter,
   validate(loginSchema.pick({ email: true })),
   controller.resendVerification
 )
 
-// POST /auth/oauth — find-or-create user from OAuth provider, issue our tokens
+// POST /auth/oauth — general auth limit
 router.post('/oauth', authLimiter, validate(oauthLoginSchema), controller.oauthLogin)
 
-// POST /auth/logout — invalidate the current refresh token
+// POST /auth/logout — no rate limit needed (invalidates token, no sensitive data)
 router.post('/logout', controller.logout)
 
-// POST /auth/forgot-password — request a password reset email
+// POST /auth/forgot-password — 3 reset emails/hr per IP
 router.post(
   '/forgot-password',
-  authLimiter,
+  passwordResetLimiter,
   validate(forgotPasswordSchema),
   controller.forgotPassword
 )
 
-// POST /auth/reset-password — consume reset token and set new password
+// POST /auth/reset-password — general auth limit
 router.post('/reset-password', authLimiter, validate(resetPasswordSchema), controller.resetPassword)
 
 export default router

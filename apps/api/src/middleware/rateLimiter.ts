@@ -42,14 +42,57 @@ export const globalLimiter = makeLimiter({
 })
 
 /**
- * Auth endpoints (login, register, forgot-password, refresh).
- * Tight window to slow credential-stuffing / brute-force attacks.
- * Applied in Phase 3 when auth routes are wired up.
+ * Auth endpoints — general catch-all for auth routes.
+ * Tighter limiters below override this for sensitive operations.
  */
 export const authLimiter = makeLimiter({
   windowMs: 15 * 60 * 1000, // 15 min
-  limit: 10,
+  limit: 20,
   message: limitedResponse('Too many authentication attempts, please try again later'),
+})
+
+/**
+ * Login — per-IP brute force protection.
+ * 5 failed attempts per 15 min should be enough for any legitimate user.
+ */
+export const loginLimiter = makeLimiter({
+  windowMs: 15 * 60 * 1000, // 15 min
+  limit: 5,
+  skipSuccessfulRequests: true, // only count failures toward the limit
+  message: limitedResponse(
+    'Too many failed login attempts. Please wait 15 minutes before trying again.'
+  ),
+})
+
+/**
+ * Register — prevent account creation spam per IP.
+ */
+export const registerLimiter = makeLimiter({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  limit: 5,
+  message: limitedResponse('Too many accounts created from this IP. Please try again later.'),
+})
+
+/**
+ * Password reset request — strict to prevent email flooding.
+ */
+export const passwordResetLimiter = makeLimiter({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  limit: 3,
+  message: limitedResponse(
+    'Too many password reset requests. Please wait an hour before trying again.'
+  ),
+})
+
+/**
+ * Resend verification email — prevent inbox spam.
+ */
+export const resendVerificationLimiter = makeLimiter({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  limit: 3,
+  message: limitedResponse(
+    'Too many verification email requests. Please wait an hour before trying again.'
+  ),
 })
 
 /**

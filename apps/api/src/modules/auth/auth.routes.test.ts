@@ -22,12 +22,20 @@ vi.mock('@/modules/auth/auth.service', () => ({
   resetPassword: vi.fn(),
 }))
 
-vi.mock('@/middleware/rateLimiter', () => ({
-  globalLimiter: (_req: unknown, _res: unknown, next: () => void) => next(),
-  writeLimiter: (_req: unknown, _res: unknown, next: () => void) => next(),
-  authLimiter: (_req: unknown, _res: unknown, next: () => void) => next(),
-  searchLimiter: (_req: unknown, _res: unknown, next: () => void) => next(),
-}))
+vi.mock('@/middleware/rateLimiter', () => {
+  const noop = (_req: unknown, _res: unknown, next: () => void) => next()
+  return {
+    globalLimiter: noop,
+    authLimiter: noop,
+    loginLimiter: noop,
+    registerLimiter: noop,
+    passwordResetLimiter: noop,
+    resendVerificationLimiter: noop,
+    writeLimiter: noop,
+    searchLimiter: noop,
+    checkoutLimiter: noop,
+  }
+})
 
 vi.mock('@/lib/stripe', () => ({
   stripe: {
