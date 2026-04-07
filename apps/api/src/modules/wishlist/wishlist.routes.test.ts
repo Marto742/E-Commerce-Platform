@@ -14,9 +14,8 @@ beforeEach(() => {
 })
 
 // ─── Auth guard
-// requireUser() runs inside the controller handler, AFTER validation middleware.
-// Routes with param/body validation: 422 fires when validation fails, 401 when it passes.
-// Routes with no validation middleware: 401 fires immediately.
+// authenticate middleware runs at router level — before any validation.
+// All unauthenticated requests return 401 regardless of body or param validity.
 
 describe('Wishlist auth guard', () => {
   it('GET /v1/wishlist returns 401 without auth (no validation middleware)', async () => {
@@ -31,9 +30,9 @@ describe('Wishlist auth guard', () => {
     expect(res.status).toBe(401)
   })
 
-  it('POST /v1/wishlist/items returns 422 for invalid body (validation fires first)', async () => {
+  it('POST /v1/wishlist/items returns 401 for invalid body (auth fires first)', async () => {
     const res = await request(app).post('/v1/wishlist/items').send({})
-    expect(res.status).toBe(422)
+    expect(res.status).toBe(401)
   })
 
   it('GET /v1/wishlist/items/:productId returns 401 without auth (valid CUID)', async () => {
@@ -41,9 +40,9 @@ describe('Wishlist auth guard', () => {
     expect(res.status).toBe(401)
   })
 
-  it('GET /v1/wishlist/items/:productId returns 422 for non-CUID productId', async () => {
+  it('GET /v1/wishlist/items/:productId returns 401 for non-CUID productId (auth fires first)', async () => {
     const res = await request(app).get('/v1/wishlist/items/not-a-cuid')
-    expect(res.status).toBe(422)
+    expect(res.status).toBe(401)
   })
 
   it('DELETE /v1/wishlist/items/:productId returns 401 without auth (valid CUID)', async () => {
@@ -51,9 +50,9 @@ describe('Wishlist auth guard', () => {
     expect(res.status).toBe(401)
   })
 
-  it('DELETE /v1/wishlist/items/:productId returns 422 for non-CUID productId', async () => {
+  it('DELETE /v1/wishlist/items/:productId returns 401 for non-CUID productId (auth fires first)', async () => {
     const res = await request(app).delete('/v1/wishlist/items/not-a-cuid')
-    expect(res.status).toBe(422)
+    expect(res.status).toBe(401)
   })
 
   it('DELETE /v1/wishlist returns 401 without auth (no validation middleware)', async () => {

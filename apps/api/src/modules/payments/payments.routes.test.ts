@@ -42,6 +42,13 @@ vi.mock('@/middleware/rateLimiter', () => {
   }
 })
 
+vi.mock('jsonwebtoken', () => ({
+  default: {
+    sign: vi.fn().mockReturnValue('mock_token'),
+    verify: vi.fn().mockReturnValue({ sub: 'user-1', role: 'CUSTOMER' }),
+  },
+}))
+
 import * as paymentsService from '@/modules/payments/payments.service'
 import * as webhookService from '@/modules/payments/webhook.service'
 
