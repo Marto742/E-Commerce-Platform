@@ -37,3 +37,15 @@ export const changePassword: RequestHandler = async (req, res, next) => {
     next(err)
   }
 }
+
+export const deleteMe: RequestHandler = async (req, res, next) => {
+  try {
+    const user = requireUser(req)
+    const { password } = req.body as { password?: string }
+    if (!password) throw AppError.badRequest('Password is required to delete your account')
+    await usersService.deleteAccount(user.id, password)
+    sendSuccess(res, { message: 'Account deleted' })
+  } catch (err) {
+    next(err)
+  }
+}

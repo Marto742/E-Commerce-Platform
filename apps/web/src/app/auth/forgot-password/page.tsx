@@ -19,7 +19,7 @@ export default function ForgotPasswordPage() {
     try {
       await fetch(`${API_BASE}/auth/forgot-password`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
         body: JSON.stringify({ email }),
       })
     } finally {

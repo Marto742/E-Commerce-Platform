@@ -59,3 +59,34 @@ export async function changePassword(userId: string, data: ChangePasswordInput) 
     prisma.refreshToken.deleteMany({ where: { userId } }),
   ])
 }
+
+export async function deleteAccount(userId: string, password: string) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { passwordHash: true, status: true },
+  })
+  if (!user) throw AppError.notFound('User not found')
+
+  // For OAuth-only accounts skip password check
+  if (!user.passwordHash.startsWith('oauth:')) {
+    const valid = await comparePassword(password, user.passwordHash)
+    if (!valid) throw AppError.badRequest('Password is incorrect')
+  }
+
+  await prisma.$transaction([
+    // Soft-delete: mark as DELETED and anonymise PII
+    prisma.user.update({
+      where: { id: userId },
+      data: {
+        status: 'DELETED',
+        email: `deleted_${userId}@deleted.invalid`,
+        passwordHash: 'deleted',
+        firstName: 'Deleted',
+        lastName: 'User',
+        avatarUrl: null,
+        phoneNumber: null,
+      },
+    }),
+    prisma.refreshToken.deleteMany({ where: { userId } }),
+  ])
+}

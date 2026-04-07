@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { signOut } from 'next-auth/react'
 import { User } from 'lucide-react'
 import { Button } from '@repo/ui'
 import { Input } from '@repo/ui'
@@ -82,6 +83,10 @@ export function ProfileForm({ initialValues, accessToken }: Props) {
     setPasswordError(null)
     setPasswordSuccess(false)
 
+    if (passwords.newPassword === passwords.currentPassword) {
+      setPasswordError('New password must be different from your current password.')
+      return
+    }
     if (passwords.newPassword !== passwords.confirmPassword) {
       setPasswordError('New passwords do not match.')
       return
@@ -106,6 +111,36 @@ export function ProfileForm({ initialValues, accessToken }: Props) {
       )
     } finally {
       setPasswordLoading(false)
+    }
+  }
+
+  const [deletePassword, setDeletePassword] = useState('')
+  const [deleteConfirm, setDeleteConfirm] = useState('')
+  const [deleteError, setDeleteError] = useState<string | null>(null)
+  const [deleteLoading, setDeleteLoading] = useState(false)
+  const [deleteOpen, setDeleteOpen] = useState(false)
+
+  async function handleDeleteAccount(e: React.FormEvent) {
+    e.preventDefault()
+    if (deleteConfirm !== 'DELETE') {
+      setDeleteError('Please type DELETE to confirm.')
+      return
+    }
+    setDeleteError(null)
+    setDeleteLoading(true)
+    try {
+      await apiFetch('/users/me', {
+        method: 'DELETE',
+        accessToken,
+        body: { password: deletePassword },
+      })
+      await signOut({ callbackUrl: '/' })
+    } catch (err) {
+      setDeleteError(
+        err instanceof ApiError ? err.message : 'Failed to delete account. Please try again.'
+      )
+    } finally {
+      setDeleteLoading(false)
     }
   }
 
@@ -278,6 +313,86 @@ export function ProfileForm({ initialValues, accessToken }: Props) {
             </Button>
           </div>
         </form>
+      </section>
+
+      {/* ── Delete account ──────────────────────────────── */}
+      <section className="rounded-xl border border-red-200 bg-white shadow-sm">
+        <div className="border-b border-red-200 px-6 py-4">
+          <h2 className="font-semibold text-red-700">Delete account</h2>
+          <p className="mt-0.5 text-sm text-gray-500">
+            Permanently delete your account and all associated data. This cannot be undone.
+          </p>
+        </div>
+
+        <div className="px-6 py-5">
+          {!deleteOpen ? (
+            <Button
+              type="button"
+              variant="outline"
+              className="border-red-300 text-red-600 hover:bg-red-50 hover:text-red-700"
+              onClick={() => setDeleteOpen(true)}
+            >
+              Delete my account
+            </Button>
+          ) : (
+            <form onSubmit={handleDeleteAccount} className="space-y-4">
+              {deleteError && (
+                <div className="rounded-md bg-red-50 px-4 py-3 text-sm text-red-700">
+                  {deleteError}
+                </div>
+              )}
+
+              <div className="space-y-1">
+                <label htmlFor="deletePassword" className="block text-sm font-medium text-gray-700">
+                  Confirm your password
+                </label>
+                <Input
+                  id="deletePassword"
+                  type="password"
+                  required
+                  value={deletePassword}
+                  onChange={(e) => setDeletePassword(e.target.value)}
+                  placeholder="••••••••"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label htmlFor="deleteConfirm" className="block text-sm font-medium text-gray-700">
+                  Type <strong>DELETE</strong> to confirm
+                </label>
+                <Input
+                  id="deleteConfirm"
+                  required
+                  value={deleteConfirm}
+                  onChange={(e) => setDeleteConfirm(e.target.value)}
+                  placeholder="DELETE"
+                />
+              </div>
+
+              <div className="flex gap-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setDeleteOpen(false)
+                    setDeletePassword('')
+                    setDeleteConfirm('')
+                    setDeleteError(null)
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={deleteLoading || deleteConfirm !== 'DELETE'}
+                  className="bg-red-600 text-white hover:bg-red-700"
+                >
+                  {deleteLoading ? 'Deleting…' : 'Permanently delete account'}
+                </Button>
+              </div>
+            </form>
+          )}
+        </div>
       </section>
     </div>
   )

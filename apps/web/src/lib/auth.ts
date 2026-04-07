@@ -50,7 +50,7 @@ async function exchangeOAuthToken(
 
   const res = await fetch(`${API_BASE}/auth/oauth`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
     body: JSON.stringify({
       provider,
       providerId,
@@ -70,7 +70,7 @@ async function exchangeOAuthToken(
 async function refreshAccessToken(refreshToken: string) {
   const res = await fetch(`${API_BASE}/auth/refresh`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
     body: JSON.stringify({ token: refreshToken }),
   })
 
@@ -94,7 +94,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         const res = await fetch(`${API_BASE}/auth/login`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
           body: JSON.stringify({
             email: credentials.email,
             password: credentials.password,

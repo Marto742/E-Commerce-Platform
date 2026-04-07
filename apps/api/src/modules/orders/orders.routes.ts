@@ -3,13 +3,14 @@ import { z } from 'zod'
 import { validate } from '@/middleware/validate'
 import { parsePagination } from '@/middleware/pagination'
 import { writeLimiter } from '@/middleware/rateLimiter'
+import { authenticate } from '@/middleware/authenticate'
 import { createOrderSchema, orderQuerySchema, idParamSchema } from '@repo/validation'
 import * as controller from './orders.controller'
 
 const router: Router = Router()
 
-// All order endpoints require authentication (wired in Phase 3).
-// Until then they return 401 UNAUTHORIZED.
+// All order endpoints require authentication
+router.use(authenticate)
 
 const updateStatusBodySchema = z.object({
   status: z.enum(['CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED', 'REFUNDED']),

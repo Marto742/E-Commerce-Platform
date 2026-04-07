@@ -28,7 +28,7 @@ function VerifyEmailContent() {
 
     fetch(`${API_BASE}/auth/verify-email`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
       body: JSON.stringify({ token }),
     })
       .then((res) => {
@@ -43,7 +43,7 @@ function VerifyEmailContent() {
     try {
       await fetch(`${API_BASE}/auth/resend-verification`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
         body: JSON.stringify({ email }),
       })
     } finally {

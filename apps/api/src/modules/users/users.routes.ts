@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import { validate } from '@/middleware/validate'
 import { writeLimiter } from '@/middleware/rateLimiter'
+import { authenticate } from '@/middleware/authenticate'
 import {
   updateProfileSchema,
   changePasswordSchema,
@@ -11,6 +12,9 @@ import * as controller from './users.controller'
 import * as addressesController from './addresses.controller'
 
 const router: Router = Router()
+
+// All /users routes require a valid access token
+router.use(authenticate)
 
 // GET  /users/me          — fetch current user profile
 router.get('/me', controller.getMe)
@@ -25,6 +29,9 @@ router.patch(
   validate(changePasswordSchema),
   controller.changePassword
 )
+
+// DELETE /users/me               — soft-delete account
+router.delete('/me', writeLimiter, controller.deleteMe)
 
 // GET    /users/me/addresses        — list addresses
 router.get('/me/addresses', addressesController.list)
