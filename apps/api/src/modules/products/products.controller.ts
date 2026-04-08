@@ -124,3 +124,40 @@ export const adjustStock: RequestHandler = async (req, res, next) => {
     next(err)
   }
 }
+
+export const addImage: RequestHandler = async (req, res, next) => {
+  try {
+    const image = await productsService.addProductImage(
+      req.params['id'] as string,
+      req.body.url as string,
+      req.body.altText as string | undefined
+    )
+    sendCreated(res, image)
+  } catch (err) {
+    next(err)
+  }
+}
+
+export const removeImage: RequestHandler = async (req, res, next) => {
+  try {
+    await productsService.deleteProductImage(
+      req.params['id'] as string,
+      req.params['imageId'] as string
+    )
+    res.status(204).send()
+  } catch (err) {
+    next(err)
+  }
+}
+
+export const reorderImages: RequestHandler = async (req, res, next) => {
+  try {
+    await productsService.reorderProductImages(
+      req.params['id'] as string,
+      req.body.orderedIds as string[]
+    )
+    res.status(204).send()
+  } catch (err) {
+    next(err)
+  }
+}

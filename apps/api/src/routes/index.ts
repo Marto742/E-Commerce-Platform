@@ -14,6 +14,7 @@ import shippingRouter from '@/modules/shipping/shipping.routes'
 import authRouter from '@/modules/auth/auth.routes'
 import usersRouter from '@/modules/users/users.routes'
 import adminRouter from '@/modules/admin/admin.routes'
+import uploadsRouter from '@/modules/uploads/uploads.routes'
 
 const router: Router = Router()
 
@@ -63,5 +64,8 @@ router.use('/shipping', shippingRouter)
 
 // ── Admin ─────────────────────────────────────────────────
 router.use('/admin', adminRouter)
+
+// ── Uploads ───────────────────────────────────────────────
+router.use('/uploads', uploadsRouter)
 
 export default router

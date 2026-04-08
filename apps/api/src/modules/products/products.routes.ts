@@ -106,4 +106,39 @@ router.delete(
   controller.removeVariant
 )
 
+// ── Images (Admin-only) ───────────────────────────────────
+
+const addImageSchema = z.object({
+  url: z.string().url(),
+  altText: z.string().max(255).optional(),
+})
+
+const reorderImagesSchema = z.object({
+  orderedIds: z.array(z.string().cuid()).min(1),
+})
+
+router.post(
+  '/:id/images',
+  requireAdmin,
+  writeLimiter,
+  validate(idParamSchema, 'params'),
+  validate(addImageSchema),
+  controller.addImage
+)
+router.delete(
+  '/:id/images/:imageId',
+  requireAdmin,
+  writeLimiter,
+  validate(idParamSchema, 'params'),
+  controller.removeImage
+)
+router.patch(
+  '/:id/images/reorder',
+  requireAdmin,
+  writeLimiter,
+  validate(idParamSchema, 'params'),
+  validate(reorderImagesSchema),
+  controller.reorderImages
+)
+
 export default router

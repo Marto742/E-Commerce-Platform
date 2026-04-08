@@ -266,3 +266,38 @@ export async function deleteVariant(productId: string, variantId: string) {
   if (!variant) throw AppError.notFound('Variant not found')
   await prisma.productVariant.delete({ where: { id: variantId } })
 }
+
+export async function addProductImage(productId: string, url: string, altText?: string) {
+  await getProductById(productId)
+
+  const maxSort = await prisma.productImage.aggregate({
+    where: { productId },
+    _max: { sortOrder: true },
+  })
+  const sortOrder = (maxSort._max.sortOrder ?? -1) + 1
+
+  return prisma.productImage.create({
+    data: { productId, url, altText: altText ?? null, sortOrder },
+  })
+}
+
+export async function deleteProductImage(productId: string, imageId: string) {
+  const image = await prisma.productImage.findFirst({
+    where: { id: imageId, productId },
+  })
+  if (!image) throw AppError.notFound('Image not found')
+  await prisma.productImage.delete({ where: { id: imageId } })
+  return image // caller may use .url to clean up R2
+}
+
+export async function reorderProductImages(productId: string, orderedIds: string[]) {
+  await getProductById(productId)
+  await prisma.$transaction(
+    orderedIds.map((id, i) =>
+      prisma.productImage.updateMany({
+        where: { id, productId },
+        data: { sortOrder: i },
+      })
+    )
+  )
+}

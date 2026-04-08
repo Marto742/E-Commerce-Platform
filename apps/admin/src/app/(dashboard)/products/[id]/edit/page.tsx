@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 import { serverFetch } from '@/lib/server-fetch'
 import { ProductForm } from '@/components/products/product-form'
 import { VariantsManager } from '@/components/products/variants-manager'
+import { ImageUploader } from '@/components/products/image-uploader'
 import { DeleteProductButton } from '@/components/products/delete-product-button'
 import { updateProductAction, deleteProductAction } from '../../actions'
 
@@ -21,6 +22,13 @@ interface Variant {
   attributes: Record<string, unknown>
 }
 
+interface ProductImage {
+  id: string
+  url: string
+  altText: string | null
+  sortOrder: number
+}
+
 interface Product {
   id: string
   name: string
@@ -32,6 +40,7 @@ interface Product {
   isFeatured: boolean
   category: { id: string; name: string }
   variants: Variant[]
+  images: ProductImage[]
 }
 
 interface Category {
@@ -99,6 +108,14 @@ export default async function EditProductPage({ params }: Props) {
           submitLabel="Save changes"
           successMessage="Product saved."
         />
+      </div>
+
+      {/* Images */}
+      <div className="mt-6">
+        <h2 className="mb-3 text-sm font-semibold text-slate-900">Images</h2>
+        <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+          <ImageUploader productId={id} images={product.images} />
+        </div>
       </div>
 
       {/* Variants */}

@@ -11,6 +11,7 @@ export type ErrorCode =
   | 'ACCOUNT_SUSPENDED'
   | 'RATE_LIMITED'
   | 'INTERNAL_ERROR'
+  | 'STORAGE_UNAVAILABLE'
 
 export class AppError extends Error {
   public readonly statusCode: number
