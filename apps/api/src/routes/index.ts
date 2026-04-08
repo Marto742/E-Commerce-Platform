@@ -13,6 +13,7 @@ import couponsRouter from '@/modules/coupons/coupons.routes'
 import shippingRouter from '@/modules/shipping/shipping.routes'
 import authRouter from '@/modules/auth/auth.routes'
 import usersRouter from '@/modules/users/users.routes'
+import adminRouter from '@/modules/admin/admin.routes'
 
 const router: Router = Router()
 
@@ -61,6 +62,6 @@ router.use('/coupons', couponsRouter)
 router.use('/shipping', shippingRouter)
 
 // ── Admin ─────────────────────────────────────────────────
-// router.use('/admin', adminRouter)        // Phase 6
+router.use('/admin', adminRouter)
 
 export default router
