@@ -5,6 +5,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { CheckCircle2, Package, MapPin, Receipt, ArrowRight } from 'lucide-react'
 import { loadOrderSnapshot, clearOrderSnapshot, type OrderSnapshot } from '@/lib/order-snapshot'
+import { useCartMutations } from '@/hooks/use-cart-mutations'
 
 const fmt = (n: number) =>
   new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n)
@@ -140,11 +141,13 @@ interface OrderConfirmationProps {
 
 export function OrderConfirmation({ orderId }: OrderConfirmationProps) {
   const [snapshot, setSnapshot] = useState<OrderSnapshot | null>(null)
+  const { clearCart } = useCartMutations()
 
   useEffect(() => {
     const data = loadOrderSnapshot(orderId)
     setSnapshot(data)
     clearOrderSnapshot()
+    void clearCart()
   }, [orderId])
 
   return (

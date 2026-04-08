@@ -4,10 +4,11 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { useSession } from 'next-auth/react'
 import { ChevronRight, Tag, X } from 'lucide-react'
 import { cn } from '@repo/ui'
 import { useCart } from '@/store/cart'
-import { api } from '@/lib/api-client'
+import { apiFetch, ApiError } from '@/lib/api-client'
 import { AddressForm } from './address-form'
 import { OrderSummary } from './order-summary'
 import { saveOrderSnapshot } from '@/lib/order-snapshot'
@@ -49,6 +50,7 @@ interface PaymentIntentResponse {
 
 export function CheckoutForm() {
   const router = useRouter()
+  const { data: session } = useSession()
   const { items } = useCart()
   const [couponInput, setCouponInput] = useState('')
   const [couponCode, setCouponCode] = useState<string | undefined>(undefined)
@@ -99,7 +101,11 @@ export function CheckoutForm() {
         couponCode,
       }
 
-      const res = await api.post<PaymentIntentResponse>('/payments/intent', payload)
+      const res = await apiFetch<PaymentIntentResponse>('/payments/intent', {
+        method: 'POST',
+        body: payload,
+        accessToken: session?.accessToken,
+      })
       const { clientSecret, orderId, breakdown } = res.data
 
       saveOrderSnapshot({
@@ -120,7 +126,8 @@ export function CheckoutForm() {
         `/checkout/payment?clientSecret=${encodeURIComponent(clientSecret)}&orderId=${orderId}`
       )
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Something went wrong. Please try again.'
+      const message =
+        err instanceof ApiError ? err.message : 'Something went wrong. Please try again.'
       if (message.includes('COUPON')) {
         setCouponError(message)
         setCouponCode(undefined)

@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useStripe, useElements, PaymentElement } from '@stripe/react-stripe-js'
 import { ShieldCheck, LockKeyhole } from 'lucide-react'
 import { cn } from '@repo/ui'
+import { loadOrderSnapshot } from '@/lib/order-snapshot'
 
 interface PaymentFormProps {
   orderId: string
@@ -23,10 +24,29 @@ export function PaymentForm({ orderId, returnUrl }: PaymentFormProps) {
     setError(null)
     setIsProcessing(true)
 
+    // Billing address is collected on the checkout page — pass it through
+    // since the Payment Element is configured with fields.billingDetails.address: 'never'
+    const snapshot = loadOrderSnapshot(orderId)
+    const address = snapshot?.shippingAddress
+
     const { error: stripeError } = await stripe.confirmPayment({
       elements,
       confirmParams: {
         return_url: `${returnUrl}?orderId=${orderId}`,
+        payment_method_data: {
+          billing_details: {
+            address: address
+              ? {
+                  line1: address.line1,
+                  line2: address.line2 ?? '',
+                  city: address.city,
+                  state: address.state,
+                  postal_code: address.postalCode,
+                  country: address.country,
+                }
+              : undefined,
+          },
+        },
       },
     })
 
