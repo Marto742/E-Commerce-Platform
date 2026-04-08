@@ -3,8 +3,13 @@
 import { useActionState } from 'react'
 import { loginAction } from './actions'
 
-export function LoginForm() {
-  const [error, formAction, isPending] = useActionState(loginAction, null)
+interface Props {
+  initialError?: string
+}
+
+export function LoginForm({ initialError }: Props) {
+  const [actionError, formAction, isPending] = useActionState(loginAction, null)
+  const error = actionError ?? initialError ?? null
 
   return (
     <form action={formAction} className="space-y-4">
