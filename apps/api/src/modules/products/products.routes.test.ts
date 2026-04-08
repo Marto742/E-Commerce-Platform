@@ -6,12 +6,36 @@ import { AppError } from '@/utils/AppError'
 
 vi.mock('./products.service')
 
+vi.mock('@/middleware/rateLimiter', () => {
+  const noop = (_req: unknown, _res: unknown, next: () => void) => next()
+  return {
+    globalLimiter: noop,
+    authLimiter: noop,
+    loginLimiter: noop,
+    registerLimiter: noop,
+    passwordResetLimiter: noop,
+    resendVerificationLimiter: noop,
+    writeLimiter: noop,
+    searchLimiter: noop,
+    checkoutLimiter: noop,
+  }
+})
+
+vi.mock('jsonwebtoken', () => ({
+  default: {
+    sign: vi.fn().mockReturnValue('mock-token'),
+    verify: vi.fn().mockReturnValue({ sub: 'admin-1', role: 'ADMIN' }),
+  },
+}))
+
 const app = createApp()
 
 // Valid CUID-format IDs (z.string().cuid() requires /^c[^\s-]{8,}$/i)
 const PROD_ID = 'clhproduct0000000000000001'
 const VAR_ID = 'clhvariant0000000000000001'
 const CAT_ID = 'clhcategory000000000000001'
+
+const ADMIN_AUTH = { Authorization: 'Bearer mock-token' }
 
 const mockProduct = {
   id: PROD_ID,
@@ -130,13 +154,13 @@ describe('POST /v1/products', () => {
 
   it('returns 201 with created product', async () => {
     vi.mocked(productsService.createProduct).mockResolvedValue(mockProduct as never)
-    const res = await request(app).post('/v1/products').send(validBody)
+    const res = await request(app).post('/v1/products').set(ADMIN_AUTH).send(validBody)
     expect(res.status).toBe(201)
     expect(res.body.success).toBe(true)
   })
 
   it('returns 422 when required fields are missing', async () => {
-    const res = await request(app).post('/v1/products').send({ name: 'Incomplete' })
+    const res = await request(app).post('/v1/products').set(ADMIN_AUTH).send({ name: 'Incomplete' })
     expect(res.status).toBe(422)
     expect(res.body.error.code).toBe('VALIDATION_ERROR')
     expect(productsService.createProduct).not.toHaveBeenCalled()
@@ -146,9 +170,14 @@ describe('POST /v1/products', () => {
     vi.mocked(productsService.createProduct).mockRejectedValue(
       AppError.conflict('Slug "gadget" is already taken')
     )
-    const res = await request(app).post('/v1/products').send(validBody)
+    const res = await request(app).post('/v1/products').set(ADMIN_AUTH).send(validBody)
     expect(res.status).toBe(409)
     expect(res.body.error.code).toBe('CONFLICT')
+  })
+
+  it('returns 401 without auth token', async () => {
+    const res = await request(app).post('/v1/products').send(validBody)
+    expect(res.status).toBe(401)
   })
 })
 
@@ -160,14 +189,22 @@ describe('PATCH /v1/products/:id', () => {
       ...mockProduct,
       name: 'Updated',
     } as never)
-    const res = await request(app).patch(`/v1/products/${PROD_ID}`).send({ name: 'Updated' })
+    const res = await request(app)
+      .patch(`/v1/products/${PROD_ID}`)
+      .set(ADMIN_AUTH)
+      .send({ name: 'Updated' })
     expect(res.status).toBe(200)
     expect(res.body.data.name).toBe('Updated')
   })
 
   it('returns 422 for invalid id param', async () => {
-    const res = await request(app).patch('/v1/products/bad-id').send({ name: 'X' })
+    const res = await request(app).patch('/v1/products/bad-id').set(ADMIN_AUTH).send({ name: 'X' })
     expect(res.status).toBe(422)
+  })
+
+  it('returns 401 without auth token', async () => {
+    const res = await request(app).patch(`/v1/products/${PROD_ID}`).send({ name: 'X' })
+    expect(res.status).toBe(401)
   })
 })
 
@@ -176,7 +213,7 @@ describe('PATCH /v1/products/:id', () => {
 describe('DELETE /v1/products/:id', () => {
   it('returns 204 on success', async () => {
     vi.mocked(productsService.deleteProduct).mockResolvedValue(undefined)
-    const res = await request(app).delete(`/v1/products/${PROD_ID}`)
+    const res = await request(app).delete(`/v1/products/${PROD_ID}`).set(ADMIN_AUTH)
     expect(res.status).toBe(204)
   })
 
@@ -184,8 +221,13 @@ describe('DELETE /v1/products/:id', () => {
     vi.mocked(productsService.deleteProduct).mockRejectedValue(
       AppError.notFound('Product not found')
     )
-    const res = await request(app).delete(`/v1/products/${PROD_ID}`)
+    const res = await request(app).delete(`/v1/products/${PROD_ID}`).set(ADMIN_AUTH)
     expect(res.status).toBe(404)
+  })
+
+  it('returns 401 without auth token', async () => {
+    const res = await request(app).delete(`/v1/products/${PROD_ID}`)
+    expect(res.status).toBe(401)
   })
 })
 
@@ -210,6 +252,7 @@ describe('PATCH /v1/products/:id/variants/:variantId/stock', () => {
     } as never)
     const res = await request(app)
       .patch(`/v1/products/${PROD_ID}/variants/${VAR_ID}/stock`)
+      .set(ADMIN_AUTH)
       .send({ operation: 'add', quantity: 10 })
     expect(res.status).toBe(200)
     expect(res.body.data.stock).toBe(60)
@@ -218,7 +261,15 @@ describe('PATCH /v1/products/:id/variants/:variantId/stock', () => {
   it('returns 422 for invalid operation', async () => {
     const res = await request(app)
       .patch(`/v1/products/${PROD_ID}/variants/${VAR_ID}/stock`)
+      .set(ADMIN_AUTH)
       .send({ operation: 'multiply', quantity: 2 })
     expect(res.status).toBe(422)
+  })
+
+  it('returns 401 without auth token', async () => {
+    const res = await request(app)
+      .patch(`/v1/products/${PROD_ID}/variants/${VAR_ID}/stock`)
+      .send({ operation: 'add', quantity: 10 })
+    expect(res.status).toBe(401)
   })
 })
