@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { validate } from '@/middleware/validate'
 import { parsePagination } from '@/middleware/pagination'
 import { searchLimiter, writeLimiter } from '@/middleware/rateLimiter'
+import { requireAdmin } from '@/middleware/authenticate'
 import {
   createProductSchema,
   updateProductSchema,
@@ -36,16 +37,23 @@ router.get(
 router.get('/slug/:slug', validate(slugParamSchema, 'params'), controller.getBySlug)
 router.get('/:id', validate(idParamSchema, 'params'), controller.getOne)
 
-// Admin-only (auth guard wired in Phase 3)
-router.post('/', writeLimiter, validate(createProductSchema), controller.create)
+// Admin-only
+router.post('/', requireAdmin, writeLimiter, validate(createProductSchema), controller.create)
 router.patch(
   '/:id',
+  requireAdmin,
   writeLimiter,
   validate(idParamSchema, 'params'),
   validate(updateProductSchema),
   controller.update
 )
-router.delete('/:id', writeLimiter, validate(idParamSchema, 'params'), controller.remove)
+router.delete(
+  '/:id',
+  requireAdmin,
+  writeLimiter,
+  validate(idParamSchema, 'params'),
+  controller.remove
+)
 
 // ── Reviews (product-scoped) ──────────────────────────────
 
@@ -69,27 +77,31 @@ router.get(
 router.get('/:id/variants', validate(idParamSchema, 'params'), controller.listVariants)
 router.get('/:id/variants/:variantId', validate(idParamSchema, 'params'), controller.getVariant)
 
-// Admin-only (auth guard wired in Phase 3)
+// Admin-only
 router.post(
   '/:id/variants',
+  requireAdmin,
   validate(idParamSchema, 'params'),
   validate(createVariantSchema.omit({ productId: true })),
   controller.createVariant
 )
 router.patch(
   '/:id/variants/:variantId',
+  requireAdmin,
   validate(idParamSchema, 'params'),
   validate(updateVariantSchema),
   controller.updateVariant
 )
 router.patch(
   '/:id/variants/:variantId/stock',
+  requireAdmin,
   validate(idParamSchema, 'params'),
   validate(stockAdjustSchema),
   controller.adjustStock
 )
 router.delete(
   '/:id/variants/:variantId',
+  requireAdmin,
   validate(idParamSchema, 'params'),
   controller.removeVariant
 )

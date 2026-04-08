@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { Suspense } from 'react'
 import { serverFetch } from '@/lib/server-fetch'
 import { ProductFilters } from '@/components/products/product-filters'
@@ -77,9 +78,12 @@ export default async function ProductsPage({ searchParams }: Props) {
             <p className="text-sm text-slate-500">{productsData.meta.total} total</p>
           )}
         </div>
-        <button className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">
+        <Link
+          href="/products/new"
+          className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+        >
           + Add Product
-        </button>
+        </Link>
       </div>
 
       {/* Filters */}
@@ -127,9 +131,12 @@ export default async function ProductsPage({ searchParams }: Props) {
                         </div>
                       )}
                       <div className="min-w-0">
-                        <p className="max-w-[220px] truncate font-medium text-slate-900">
+                        <Link
+                          href={`/products/${product.id}/edit`}
+                          className="max-w-[220px] truncate font-medium text-slate-900 hover:text-blue-600"
+                        >
                           {product.name}
-                        </p>
+                        </Link>
                         <p className="truncate text-xs text-slate-400">{product.slug}</p>
                       </div>
                     </div>
