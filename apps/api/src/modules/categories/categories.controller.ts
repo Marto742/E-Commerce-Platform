@@ -47,10 +47,8 @@ export const update: RequestHandler = async (req, res, next) => {
 export const remove: RequestHandler = async (req, res, next) => {
   try {
     const id = req.params['id'] as string
-    const category = await categoriesService.getCategoryById(id)
     await categoriesService.deleteCategory(id)
-    if (req.user?.id)
-      logActivity(req.user.id, 'category.delete', 'category', id, { name: category.name })
+    if (req.user?.id) logActivity(req.user.id, 'category.delete', 'category', id)
     res.status(204).send()
   } catch (err) {
     next(err)
