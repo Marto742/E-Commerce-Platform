@@ -179,6 +179,72 @@ export const adminProductQuerySchema = paginationSchema.extend({
 
 export type AdminProductQueryInput = z.infer<typeof adminProductQuerySchema>
 
+// ─── Export ───────────────────────────────────────────────────────────────────
+
+function escapeCsv(val: unknown): string {
+  const str = val == null ? '' : String(val)
+  return str.includes(',') || str.includes('"') || str.includes('\n')
+    ? `"${str.replace(/"/g, '""')}"`
+    : str
+}
+
+function toCsvRow(values: unknown[]): string {
+  return values.map(escapeCsv).join(',')
+}
+
+export async function exportProducts(): Promise<string> {
+  const products = await prisma.product.findMany({
+    orderBy: { createdAt: 'desc' },
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      basePrice: true,
+      comparePrice: true,
+      isActive: true,
+      isFeatured: true,
+      createdAt: true,
+      category: { select: { name: true } },
+      _count: { select: { variants: true, reviews: true } },
+      variants: { where: { isActive: true }, select: { stock: true } },
+    },
+  })
+
+  const header = toCsvRow([
+    'id',
+    'name',
+    'slug',
+    'category',
+    'base_price',
+    'compare_price',
+    'total_stock',
+    'variants',
+    'reviews',
+    'is_active',
+    'is_featured',
+    'created_at',
+  ])
+
+  const rows = products.map((p) =>
+    toCsvRow([
+      p.id,
+      p.name,
+      p.slug,
+      p.category.name,
+      Number(p.basePrice).toFixed(2),
+      p.comparePrice != null ? Number(p.comparePrice).toFixed(2) : '',
+      p.variants.reduce((sum, v) => sum + v.stock, 0),
+      p._count.variants,
+      p._count.reviews,
+      p.isActive,
+      p.isFeatured,
+      p.createdAt.toISOString(),
+    ])
+  )
+
+  return [header, ...rows].join('\n')
+}
+
 export async function listAdminProducts(query: AdminProductQueryInput) {
   const {
     page,

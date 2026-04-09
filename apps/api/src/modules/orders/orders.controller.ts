@@ -13,6 +13,20 @@ function isAdmin(req: Request) {
   return req.user?.role === 'ADMIN' || req.user?.role === 'SUPER_ADMIN'
 }
 
+export const exportOrders: RequestHandler = async (req, res, next) => {
+  try {
+    requireUser(req)
+    if (!isAdmin(req)) throw AppError.forbidden()
+    const csv = await ordersService.exportOrders()
+    const filename = `orders-${new Date().toISOString().slice(0, 10)}.csv`
+    res.setHeader('Content-Type', 'text/csv')
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`)
+    res.send(csv)
+  } catch (err) {
+    next(err)
+  }
+}
+
 export const list: RequestHandler = async (req, res, next) => {
   try {
     const user = requireUser(req)

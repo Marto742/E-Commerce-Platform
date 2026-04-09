@@ -104,6 +104,13 @@ export default async function OrdersPage({ searchParams }: Props) {
           <h1 className="text-2xl font-bold text-slate-900">Orders</h1>
           {result && <p className="text-sm text-slate-500">{result.meta.total} total</p>}
         </div>
+        <a
+          href="/api/orders/export"
+          download
+          className="rounded-md border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+        >
+          Export CSV
+        </a>
       </div>
 
       {/* Filters */}

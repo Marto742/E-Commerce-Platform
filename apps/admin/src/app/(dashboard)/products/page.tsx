@@ -79,6 +79,13 @@ export default async function ProductsPage({ searchParams }: Props) {
           )}
         </div>
         <div className="flex items-center gap-2">
+          <a
+            href="/api/products/export"
+            download
+            className="rounded-md border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+          >
+            Export CSV
+          </a>
           <Link
             href="/products/import"
             className="rounded-md border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"

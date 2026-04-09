@@ -35,6 +35,77 @@ const ORDER_LIST_INCLUDE = {
   _count: { select: { items: true } },
 } as const
 
+// ─── Export ───────────────────────────────────────────────────────────────────
+
+function escapeCsv(val: unknown): string {
+  const str = val == null ? '' : String(val)
+  return str.includes(',') || str.includes('"') || str.includes('\n')
+    ? `"${str.replace(/"/g, '""')}"`
+    : str
+}
+
+function toCsvRow(values: unknown[]): string {
+  return values.map(escapeCsv).join(',')
+}
+
+export async function exportOrders(): Promise<string> {
+  const orders = await prisma.order.findMany({
+    orderBy: { createdAt: 'desc' },
+    select: {
+      id: true,
+      status: true,
+      userId: true,
+      guestEmail: true,
+      subtotal: true,
+      discountAmount: true,
+      shippingCost: true,
+      tax: true,
+      total: true,
+      couponCode: true,
+      trackingNumber: true,
+      notes: true,
+      createdAt: true,
+      _count: { select: { items: true } },
+    },
+  })
+
+  const header = toCsvRow([
+    'id',
+    'status',
+    'customer',
+    'items',
+    'subtotal',
+    'discount',
+    'shipping',
+    'tax',
+    'total',
+    'coupon',
+    'tracking',
+    'notes',
+    'created_at',
+  ])
+
+  const rows = orders.map((o) =>
+    toCsvRow([
+      o.id,
+      o.status,
+      o.userId ?? o.guestEmail ?? 'guest',
+      o._count.items,
+      Number(o.subtotal).toFixed(2),
+      Number(o.discountAmount).toFixed(2),
+      Number(o.shippingCost).toFixed(2),
+      Number(o.tax).toFixed(2),
+      Number(o.total).toFixed(2),
+      o.couponCode ?? '',
+      o.trackingNumber ?? '',
+      o.notes ?? '',
+      o.createdAt.toISOString(),
+    ])
+  )
+
+  return [header, ...rows].join('\n')
+}
+
 export async function listOrders(userId: string, isAdmin: boolean, query: OrderQueryInput) {
   const { page, limit, status, userId: filterUserId } = query
   const skip = (page - 1) * limit

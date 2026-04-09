@@ -13,6 +13,18 @@ export const list: RequestHandler = async (req, res, next) => {
   }
 }
 
+export const exportProducts: RequestHandler = async (_req, res, next) => {
+  try {
+    const csv = await productsService.exportProducts()
+    const filename = `products-${new Date().toISOString().slice(0, 10)}.csv`
+    res.setHeader('Content-Type', 'text/csv')
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`)
+    res.send(csv)
+  } catch (err) {
+    next(err)
+  }
+}
+
 export const importProducts: RequestHandler = async (req, res, next) => {
   try {
     const body = productsService.importProductsBodySchema.parse(req.body)
