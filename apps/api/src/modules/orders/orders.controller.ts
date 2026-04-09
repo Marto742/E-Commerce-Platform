@@ -1,6 +1,7 @@
 import type { Request, RequestHandler } from 'express'
 import { AppError } from '@/utils/AppError'
 import { sendSuccess, sendCreated, sendPaginated } from '@/utils/response'
+import { logActivity } from '@/modules/admin/activity-log.service'
 import * as ordersService from './orders.service'
 
 function requireUser(req: Request) {
@@ -52,12 +53,13 @@ export const create: RequestHandler = async (req, res, next) => {
 
 export const updateStatus: RequestHandler = async (req, res, next) => {
   try {
-    requireUser(req)
+    const user = requireUser(req)
     if (!isAdmin(req)) throw AppError.forbidden()
     const order = await ordersService.updateOrderStatus(
       req.params['id'] as string,
       req.body.status as string
     )
+    logActivity(user.id, 'order.status_update', 'order', order.id, { status: order.status })
     sendSuccess(res, order)
   } catch (err) {
     next(err)
@@ -76,12 +78,13 @@ export const cancel: RequestHandler = async (req, res, next) => {
 
 export const refund: RequestHandler = async (req, res, next) => {
   try {
-    requireUser(req)
+    const user = requireUser(req)
     if (!isAdmin(req)) throw AppError.forbidden()
     const order = await ordersService.refundOrder(
       req.params['id'] as string,
       req.body.reason as string | undefined
     )
+    logActivity(user.id, 'order.refund', 'order', order.id, { reason: req.body.reason })
     sendSuccess(res, order)
   } catch (err) {
     next(err)
@@ -90,12 +93,15 @@ export const refund: RequestHandler = async (req, res, next) => {
 
 export const updateTracking: RequestHandler = async (req, res, next) => {
   try {
-    requireUser(req)
+    const user = requireUser(req)
     if (!isAdmin(req)) throw AppError.forbidden()
     const order = await ordersService.setTrackingNumber(
       req.params['id'] as string,
       req.body.trackingNumber as string
     )
+    logActivity(user.id, 'order.tracking_update', 'order', order.id, {
+      trackingNumber: req.body.trackingNumber,
+    })
     sendSuccess(res, order)
   } catch (err) {
     next(err)

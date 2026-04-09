@@ -7,6 +7,7 @@ import {
   BarChart3,
   Box,
   ChevronLeft,
+  ClipboardList,
   Folders,
   LayoutDashboard,
   LogOut,
@@ -29,6 +30,7 @@ const NAV_ITEMS = [
   { href: '/coupons', label: 'Coupons', icon: Tag },
   { href: '/analytics', label: 'Analytics', icon: BarChart3 },
   { href: '/returns', label: 'Returns', icon: RotateCcw },
+  { href: '/activity', label: 'Activity Log', icon: ClipboardList },
   { href: '/settings', label: 'Settings', icon: Settings },
 ]
 

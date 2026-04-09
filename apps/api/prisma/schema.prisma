@@ -62,6 +62,7 @@ model User {
   emailVerificationTokens  EmailVerificationToken[]
   cart                     Cart?
   wishlist                 Wishlist?
+  activityLogs             ActivityLog[]
 
   @@index([status])
   @@map("users")
@@ -338,6 +339,25 @@ model Coupon {
 
   @@index([isActive, expiresAt])
   @@map("coupons")
+}
+
+// ─── Activity Log ─────────────────────────────────────────────────────────────
+
+model ActivityLog {
+  id        String   @id @default(cuid())
+  adminId   String?  @map("admin_id")
+  action    String
+  entity    String
+  entityId  String?  @map("entity_id")
+  meta      Json?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  admin User? @relation(fields: [adminId], references: [id], onDelete: SetNull)
+
+  @@index([adminId])
+  @@index([entity, entityId])
+  @@index([createdAt])
+  @@map("activity_logs")
 }
 
 // ─── Wishlist ─────────────────────────────────────────────────────────────────

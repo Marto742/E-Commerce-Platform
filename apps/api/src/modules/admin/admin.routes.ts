@@ -3,6 +3,7 @@ import { requireAdmin } from '@/middleware/authenticate'
 import * as analyticsController from './analytics.controller'
 import * as productsController from './products.controller'
 import * as customersController from './customers.controller'
+import * as activityLogController from './activity-log.controller'
 
 const router: Router = Router()
 
@@ -12,5 +13,6 @@ router.get('/analytics/overview', analyticsController.overview)
 router.get('/products', productsController.list)
 router.post('/products/import', productsController.importProducts)
 router.get('/customers', customersController.list)
+router.get('/activity-logs', activityLogController.list)
 
 export default router
