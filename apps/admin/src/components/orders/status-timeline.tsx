@@ -55,7 +55,6 @@ export function StatusTimeline({ status }: Props) {
           {PIPELINE.map((step, i) => {
             const isDone = i < currentIndex
             const isActive = i === currentIndex
-            const isUpcoming = i > currentIndex
 
             return (
               <li key={step} className="flex flex-1 flex-col items-center">
