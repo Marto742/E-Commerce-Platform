@@ -32,7 +32,11 @@ const NAV_ITEMS = [
   { href: '/settings', label: 'Settings', icon: Settings },
 ]
 
-export function Sidebar() {
+interface SidebarProps {
+  lowStockCount?: number
+}
+
+export function Sidebar({ lowStockCount = 0 }: SidebarProps) {
   const pathname = usePathname()
   const router = useRouter()
   const [collapsed, setCollapsed] = useState(false)
@@ -77,6 +81,7 @@ export function Sidebar() {
       <nav className="flex-1 space-y-0.5 overflow-y-auto px-2 py-3">
         {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
           const isActive = pathname === href || pathname.startsWith(`${href}/`)
+          const badge = href === '/inventory' && lowStockCount > 0 ? lowStockCount : null
           return (
             <Link
               key={href}
@@ -91,7 +96,16 @@ export function Sidebar() {
               )}
             >
               <Icon className="h-4 w-4 shrink-0" />
-              {!collapsed && <span>{label}</span>}
+              {!collapsed && (
+                <>
+                  <span className="flex-1">{label}</span>
+                  {badge !== null && (
+                    <span className="rounded-full bg-amber-500 px-1.5 py-0.5 text-xs font-bold text-white leading-none">
+                      {badge > 99 ? '99+' : badge}
+                    </span>
+                  )}
+                </>
+              )}
             </Link>
           )
         })}

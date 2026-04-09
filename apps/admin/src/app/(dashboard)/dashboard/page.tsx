@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { serverFetch } from '@/lib/server-fetch'
 import { StatCard } from '@/components/dashboard/stat-card'
 
@@ -56,15 +57,29 @@ const STATUS_ORDER = [
   'REFUNDED',
 ]
 
+interface LowStockVariant {
+  id: string
+  sku: string
+  name: string
+  stock: number
+  product: { id: string; name: string }
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default async function DashboardPage() {
   let overview: OverviewData | null = null
   let fetchError = false
+  let lowStockVariants: LowStockVariant[] = []
 
   try {
-    const res = await serverFetch<{ data: OverviewData }>('/admin/analytics/overview')
-    overview = res.data
+    const [overviewRes, lowStockRes] = await Promise.allSettled([
+      serverFetch<{ data: OverviewData }>('/admin/analytics/overview'),
+      serverFetch<{ data: LowStockVariant[] }>('/inventory/low-stock?limit=5'),
+    ])
+    if (overviewRes.status === 'fulfilled') overview = overviewRes.value.data
+    else fetchError = true
+    if (lowStockRes.status === 'fulfilled') lowStockVariants = lowStockRes.value.data
   } catch {
     fetchError = true
   }
@@ -110,6 +125,49 @@ export default async function DashboardPage() {
       </div>
 
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
+        {/* Low stock widget */}
+        {lowStockVariants.length > 0 && (
+          <div className="lg:col-span-3">
+            <div className="rounded-xl border border-amber-200 bg-amber-50 shadow-sm">
+              <div className="flex items-center justify-between border-b border-amber-100 px-5 py-4">
+                <h2 className="text-sm font-semibold text-amber-900">Low / Out-of-Stock Alerts</h2>
+                <Link
+                  href="/inventory?tab=low-stock"
+                  className="text-xs font-medium text-amber-700 hover:underline"
+                >
+                  View all →
+                </Link>
+              </div>
+              <ul className="divide-y divide-amber-100">
+                {lowStockVariants.map((v) => (
+                  <li key={v.id} className="flex items-center justify-between px-5 py-3">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium text-slate-900">
+                        {v.product.name}
+                        {v.name ? (
+                          <span className="font-normal text-slate-500"> — {v.name}</span>
+                        ) : null}
+                      </p>
+                      <p className="text-xs text-slate-400">SKU: {v.sku}</p>
+                    </div>
+                    <div className="ml-4 shrink-0">
+                      {v.stock === 0 ? (
+                        <span className="inline-flex rounded-full bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-700">
+                          Out of stock
+                        </span>
+                      ) : (
+                        <span className="inline-flex rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700">
+                          {v.stock} left
+                        </span>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        )}
+
         {/* Recent orders */}
         <div className="lg:col-span-2">
           <div className="rounded-xl border border-slate-200 bg-white shadow-sm">

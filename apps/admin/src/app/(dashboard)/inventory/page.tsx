@@ -3,6 +3,7 @@ import { Suspense } from 'react'
 import { serverFetch } from '@/lib/server-fetch'
 import { InventoryFilters } from '@/components/inventory/inventory-filters'
 import { InventoryTable } from '@/components/inventory/inventory-table'
+import { LowStockAlert } from '@/components/inventory/low-stock-alert'
 import { PaginationBar } from '@/components/ui/pagination-bar'
 
 export const metadata: Metadata = { title: 'Inventory' }
@@ -41,6 +42,14 @@ interface StockSummary {
   threshold: number
 }
 
+interface AlertVariant {
+  id: string
+  sku: string
+  name: string
+  stock: number
+  product: { id: string; name: string }
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 interface Props {
@@ -60,15 +69,38 @@ export default async function InventoryPage({ searchParams }: Props) {
 
   const endpoint = tab === 'low-stock' ? `/inventory/low-stock?${qs}` : `/inventory?${qs}`
 
-  const [variantsRes, summaryRes] = await Promise.allSettled([
+  const [variantsRes, summaryRes, alertRes] = await Promise.allSettled([
     serverFetch<{ data: InventoryVariant[]; meta: PaginationMeta }>(endpoint),
     serverFetch<{ data: StockSummary }>('/inventory/summary'),
+    serverFetch<{ data: AlertVariant[] }>('/inventory/low-stock?limit=20'),
   ])
 
   const variantsData = variantsRes.status === 'fulfilled' ? variantsRes.value : null
   const summary = summaryRes.status === 'fulfilled' ? summaryRes.value.data : null
+  const alertVariants = alertRes.status === 'fulfilled' ? alertRes.value.data : []
   const fetchError = variantsRes.status === 'rejected'
   const threshold = summary?.threshold ?? 10
+
+  const outOfStockAlerts = alertVariants
+    .filter((v) => v.stock === 0)
+    .map((v) => ({
+      id: v.id,
+      sku: v.sku,
+      name: v.name,
+      stock: v.stock,
+      productId: v.product.id,
+      productName: v.product.name,
+    }))
+  const lowStockAlerts = alertVariants
+    .filter((v) => v.stock > 0)
+    .map((v) => ({
+      id: v.id,
+      sku: v.sku,
+      name: v.name,
+      stock: v.stock,
+      productId: v.product.id,
+      productName: v.product.name,
+    }))
 
   return (
     <div>
@@ -101,6 +133,13 @@ export default async function InventoryPage({ searchParams }: Props) {
           </div>
         </div>
       )}
+
+      {/* Low-stock alert banner */}
+      <LowStockAlert
+        outOfStock={outOfStockAlerts}
+        lowStock={lowStockAlerts}
+        threshold={threshold}
+      />
 
       {/* Filters */}
       <div className="mb-4">
