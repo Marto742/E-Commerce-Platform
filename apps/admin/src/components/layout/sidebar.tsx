@@ -14,6 +14,7 @@ import {
   RotateCcw,
   Settings,
   Tag,
+  Tags,
   Users,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -21,6 +22,7 @@ import { cn } from '@/lib/utils'
 const NAV_ITEMS = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/products', label: 'Products', icon: Box },
+  { href: '/categories', label: 'Categories', icon: Tags },
   { href: '/orders', label: 'Orders', icon: PackageCheck },
   { href: '/customers', label: 'Customers', icon: Users },
   { href: '/inventory', label: 'Inventory', icon: Folders },
