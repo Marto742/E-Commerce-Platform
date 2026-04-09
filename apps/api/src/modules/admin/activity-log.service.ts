@@ -1,3 +1,4 @@
+import { Prisma } from '@/generated/prisma/client'
 import { prisma } from '@/lib/prisma'
 import { buildPaginationMeta } from '@/utils/response'
 
@@ -17,7 +18,7 @@ export function logActivity(
         action,
         entity,
         entityId: entityId ?? null,
-        meta: meta ?? null,
+        meta: meta !== undefined ? (meta as Prisma.InputJsonValue) : Prisma.JsonNull,
       },
     })
     .catch(() => {
