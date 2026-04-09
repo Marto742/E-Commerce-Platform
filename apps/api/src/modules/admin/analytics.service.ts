@@ -62,18 +62,29 @@ export async function getOverview() {
     }),
   ])
 
-  // Daily revenue for sparkline (last 30 days) — requires raw SQL for date truncation
-  const dailyRevenue = await prisma.$queryRaw<Array<{ day: Date; revenue: number }>>`
-    SELECT
-      DATE_TRUNC('day', created_at) AS day,
-      SUM(total)::float             AS revenue
-    FROM orders
-    WHERE
-      created_at >= ${thirtyDaysAgo}
-      AND status IN ('CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED')
-    GROUP BY DATE_TRUNC('day', created_at)
-    ORDER BY day ASC
-  `
+  // Daily revenue + order counts for charts (last 30 days) — requires raw SQL for date truncation
+  const [dailyRevenue, dailyOrders] = await Promise.all([
+    prisma.$queryRaw<Array<{ day: Date; revenue: number }>>`
+      SELECT
+        DATE_TRUNC('day', created_at) AS day,
+        SUM(total)::float             AS revenue
+      FROM orders
+      WHERE
+        created_at >= ${thirtyDaysAgo}
+        AND status IN ('CONFIRMED', 'PROCESSING', 'SHIPPED', 'DELIVERED')
+      GROUP BY DATE_TRUNC('day', created_at)
+      ORDER BY day ASC
+    `,
+    prisma.$queryRaw<Array<{ day: Date; count: number }>>`
+      SELECT
+        DATE_TRUNC('day', created_at) AS day,
+        COUNT(*)::int                 AS count
+      FROM orders
+      WHERE created_at >= ${thirtyDaysAgo}
+      GROUP BY DATE_TRUNC('day', created_at)
+      ORDER BY day ASC
+    `,
+  ])
 
   const thisRevenue = Number(revenueThis._sum.total ?? 0)
   const lastRevenue = Number(revenueLast._sum.total ?? 0)
@@ -102,6 +113,10 @@ export async function getOverview() {
     dailyRevenue: dailyRevenue.map((d) => ({
       day: d.day.toISOString().slice(0, 10),
       revenue: d.revenue,
+    })),
+    dailyOrders: dailyOrders.map((d) => ({
+      day: d.day.toISOString().slice(0, 10),
+      count: d.count,
     })),
   }
 }
