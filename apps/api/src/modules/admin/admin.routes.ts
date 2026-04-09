@@ -9,5 +9,6 @@ router.use(requireAdmin)
 
 router.get('/analytics/overview', analyticsController.overview)
 router.get('/products', productsController.list)
+router.post('/products/import', productsController.importProducts)
 
 export default router

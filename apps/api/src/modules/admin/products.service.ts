@@ -3,6 +3,165 @@ import { prisma } from '@/lib/prisma'
 import { buildPaginationMeta } from '@/utils/response'
 import { paginationSchema } from '@repo/validation'
 
+// ─── Import ───────────────────────────────────────────────────────────────────
+
+const importRowSchema = z.object({
+  name: z.string().min(1),
+  slug: z.string().min(1),
+  description: z.string().optional(),
+  categorySlug: z.string().min(1),
+  basePrice: z.number().nonnegative(),
+  comparePrice: z.number().nonnegative().optional(),
+  isActive: z.boolean().default(true),
+  isFeatured: z.boolean().default(false),
+  variantSku: z.string().optional(),
+  variantName: z.string().optional(),
+  variantPrice: z.number().nonnegative().optional(),
+  variantStock: z.number().int().nonnegative().default(0),
+  variantAttributes: z.record(z.string()).optional(),
+})
+
+export const importProductsBodySchema = z.object({
+  rows: z.array(importRowSchema).min(1).max(500),
+})
+
+export type ImportProductsInput = z.infer<typeof importProductsBodySchema>
+
+export interface ImportResult {
+  imported: number
+  skipped: number
+  errors: Array<{ row: number; slug: string; error: string }>
+}
+
+export async function importProducts(input: ImportProductsInput): Promise<ImportResult> {
+  const { rows } = input
+
+  // Collect all category slugs and resolve them up front
+  const categorySlugs = [...new Set(rows.map((r) => r.categorySlug))]
+  const categories = await prisma.category.findMany({
+    where: { slug: { in: categorySlugs } },
+    select: { id: true, slug: true },
+  })
+  const categoryMap = new Map(categories.map((c) => [c.slug, c.id]))
+
+  // Group rows by product slug to collect variants
+  const productMap = new Map<
+    string,
+    {
+      rowIndex: number
+      data: (typeof rows)[number]
+      variants: Array<{
+        sku: string
+        name: string
+        price: number
+        stock: number
+        attributes: Record<string, string>
+      }>
+    }
+  >()
+
+  const errors: ImportResult['errors'] = []
+
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i]
+    const existing = productMap.get(row.slug)
+    if (existing) {
+      // Additional variant for an already-seen product slug
+      if (row.variantSku && row.variantName && row.variantPrice != null) {
+        existing.variants.push({
+          sku: row.variantSku,
+          name: row.variantName,
+          price: row.variantPrice,
+          stock: row.variantStock ?? 0,
+          attributes: row.variantAttributes ?? {},
+        })
+      }
+    } else {
+      const variant =
+        row.variantSku && row.variantName && row.variantPrice != null
+          ? {
+              sku: row.variantSku,
+              name: row.variantName,
+              price: row.variantPrice,
+              stock: row.variantStock ?? 0,
+              attributes: row.variantAttributes ?? {},
+            }
+          : null
+
+      productMap.set(row.slug, {
+        rowIndex: i + 1,
+        data: row,
+        variants: variant ? [variant] : [],
+      })
+    }
+  }
+
+  let imported = 0
+  let skipped = 0
+
+  for (const [slug, { rowIndex, data, variants }] of productMap) {
+    const categoryId = categoryMap.get(data.categorySlug)
+    if (!categoryId) {
+      errors.push({ row: rowIndex, slug, error: `Category "${data.categorySlug}" not found` })
+      skipped++
+      continue
+    }
+
+    // Skip if slug already exists
+    const existing = await prisma.product.findUnique({ where: { slug }, select: { id: true } })
+    if (existing) {
+      errors.push({ row: rowIndex, slug, error: `Slug "${slug}" already exists` })
+      skipped++
+      continue
+    }
+
+    // Validate variant SKUs are unique within the batch and DB
+    const skusInBatch = variants.map((v) => v.sku)
+    const duplicateSku = await prisma.productVariant.findFirst({
+      where: { sku: { in: skusInBatch } },
+      select: { sku: true },
+    })
+    if (duplicateSku) {
+      errors.push({ row: rowIndex, slug, error: `SKU "${duplicateSku.sku}" already in use` })
+      skipped++
+      continue
+    }
+
+    try {
+      await prisma.product.create({
+        data: {
+          name: data.name,
+          slug,
+          description: data.description ?? null,
+          categoryId,
+          basePrice: data.basePrice,
+          comparePrice: data.comparePrice ?? null,
+          isActive: data.isActive,
+          isFeatured: data.isFeatured,
+          variants: {
+            create: variants.map((v) => ({
+              sku: v.sku,
+              name: v.name,
+              price: v.price,
+              stock: v.stock,
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+              attributes: JSON.parse(JSON.stringify(v.attributes)),
+              isActive: true,
+            })),
+          },
+        },
+      })
+      imported++
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Unknown error'
+      errors.push({ row: rowIndex, slug, error: msg })
+      skipped++
+    }
+  }
+
+  return { imported, skipped, errors }
+}
+
 export const adminProductQuerySchema = paginationSchema.extend({
   search: z.string().optional(),
   categoryId: z.string().cuid().optional(),

@@ -11,3 +11,13 @@ export const list: RequestHandler = async (req, res, next) => {
     next(err)
   }
 }
+
+export const importProducts: RequestHandler = async (req, res, next) => {
+  try {
+    const body = productsService.importProductsBodySchema.parse(req.body)
+    const result = await productsService.importProducts(body)
+    res.status(200).json({ data: result })
+  } catch (err) {
+    next(err)
+  }
+}

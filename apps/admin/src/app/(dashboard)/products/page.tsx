@@ -78,12 +78,20 @@ export default async function ProductsPage({ searchParams }: Props) {
             <p className="text-sm text-slate-500">{productsData.meta.total} total</p>
           )}
         </div>
-        <Link
-          href="/products/new"
-          className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
-        >
-          + Add Product
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/products/import"
+            className="rounded-md border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+          >
+            Import CSV
+          </Link>
+          <Link
+            href="/products/new"
+            className="rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+          >
+            + Add Product
+          </Link>
+        </div>
       </div>
 
       {/* Filters */}
