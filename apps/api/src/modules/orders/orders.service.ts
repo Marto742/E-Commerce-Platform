@@ -283,6 +283,43 @@ export async function setTrackingNumber(id: string, trackingNumber: string) {
   })
 }
 
+// Admin: refund a delivered order
+export async function refundOrder(id: string, reason?: string) {
+  const order = await prisma.order.findUnique({
+    where: { id },
+    include: { items: true },
+  })
+  if (!order) throw AppError.notFound('Order not found')
+  if (order.status !== 'DELIVERED') {
+    throw AppError.badRequest('Only delivered orders can be refunded')
+  }
+
+  const refundNote = reason ? `REFUNDED: ${reason}` : 'REFUNDED'
+  const updatedNotes = order.notes ? `${order.notes}\n${refundNote}` : refundNote
+
+  return prisma.$transaction(async (tx) => {
+    // Restore stock
+    for (const item of order.items) {
+      await tx.productVariant.update({
+        where: { id: item.variantId },
+        data: { stock: { increment: item.quantity } },
+      })
+    }
+    // Decrement coupon usage
+    if (order.couponCode) {
+      await tx.coupon.update({
+        where: { code: order.couponCode },
+        data: { usesCount: { decrement: 1 } },
+      })
+    }
+    return tx.order.update({
+      where: { id },
+      data: { status: 'REFUNDED', notes: updatedNotes },
+      include: ORDER_DETAIL_INCLUDE,
+    })
+  })
+}
+
 // User: cancel their own order (only PENDING or CONFIRMED)
 export async function cancelOrder(id: string, userId: string) {
   const order = await prisma.order.findUnique({

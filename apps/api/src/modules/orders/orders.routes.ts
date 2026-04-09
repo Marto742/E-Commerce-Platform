@@ -37,6 +37,19 @@ router.patch(
   controller.updateStatus
 )
 
+// Admin: process a full refund on a delivered order
+const refundBodySchema = z.object({
+  reason: z.string().max(500).optional(),
+})
+
+router.post(
+  '/:id/refund',
+  writeLimiter,
+  validate(idParamSchema, 'params'),
+  validate(refundBodySchema),
+  controller.refund
+)
+
 // Admin: set or override tracking number
 router.patch(
   '/:id/tracking',

@@ -74,6 +74,20 @@ export const cancel: RequestHandler = async (req, res, next) => {
   }
 }
 
+export const refund: RequestHandler = async (req, res, next) => {
+  try {
+    requireUser(req)
+    if (!isAdmin(req)) throw AppError.forbidden()
+    const order = await ordersService.refundOrder(
+      req.params['id'] as string,
+      req.body.reason as string | undefined
+    )
+    sendSuccess(res, order)
+  } catch (err) {
+    next(err)
+  }
+}
+
 export const updateTracking: RequestHandler = async (req, res, next) => {
   try {
     requireUser(req)
