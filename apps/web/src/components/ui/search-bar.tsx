@@ -8,6 +8,7 @@ import { Search, X, ArrowRight } from 'lucide-react'
 import { cn } from '@repo/ui'
 import { Button } from '@repo/ui'
 import { useSearchSuggestions } from '@/hooks/use-search-suggestions'
+import { useDebounce } from '@/hooks/use-debounce'
 
 function formatPrice(price: number) {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(price)
@@ -26,10 +27,11 @@ export function SearchBar({ className }: SearchBarProps) {
   const inputRef = useRef<HTMLInputElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
 
-  const { data, isFetching } = useSearchSuggestions(query)
+  const debouncedQuery = useDebounce(query, 250)
+  const { data, isFetching } = useSearchSuggestions(debouncedQuery)
   const suggestions = useMemo(() => data?.data ?? [], [data])
 
-  const showDropdown = open && query.trim().length >= 2
+  const showDropdown = open && debouncedQuery.trim().length >= 2
 
   // Focus input when opened
   useEffect(() => {
