@@ -58,9 +58,9 @@ describe('SearchBar', () => {
             id: '1',
             name: 'T-Shirt',
             slug: 't-shirt',
-            basePrice: '29.99',
-            category: null,
-            images: [],
+            basePrice: 29.99,
+            categoryName: 'Clothing',
+            imageUrl: null,
           },
         ],
       },
@@ -81,9 +81,9 @@ describe('SearchBar', () => {
             id: '1',
             name: 'Classic T-Shirt',
             slug: 'classic-t-shirt',
-            basePrice: '29.99',
-            category: { name: 'Clothing', id: 'c1', slug: 'clothing' },
-            images: [],
+            basePrice: 29.99,
+            categoryName: 'Clothing',
+            imageUrl: null,
           },
         ],
       },
@@ -122,6 +122,6 @@ describe('SearchBar', () => {
     await userEvent.type(screen.getByPlaceholderText(/search products/i), 'denim')
     await userEvent.keyboard('{Enter}')
 
-    expect(push).toHaveBeenCalledWith('/products?search=denim')
+    expect(push).toHaveBeenCalledWith('/search?q=denim')
   })
 })
