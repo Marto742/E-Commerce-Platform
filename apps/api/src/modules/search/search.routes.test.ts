@@ -1,7 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import request from 'supertest'
 import { createApp } from '@/app'
+import type { searchProducts } from './search.service'
 import * as searchService from './search.service'
+
+type SearchResult = Awaited<ReturnType<typeof searchProducts>>
 
 vi.mock('./search.service')
 
@@ -37,8 +40,8 @@ const mockHit = {
   maxPrice: 49.99,
 }
 
-const mockResult = {
-  hits: [mockHit],
+const mockResult: SearchResult = {
+  hits: [mockHit] as SearchResult['hits'],
   meta: { query: 'widget', page: 1, limit: 20, total: 1, totalPages: 1, processingTimeMs: 2 },
 }
 
