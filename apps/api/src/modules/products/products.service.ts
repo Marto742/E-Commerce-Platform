@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import { AppError } from '@/utils/AppError'
+import { indexProduct, deleteProductFromIndex } from '@/lib/search-indexer'
 import { buildPaginationMeta } from '@/utils/response'
 import type {
   CreateProductInput,
@@ -129,7 +130,9 @@ export async function createProduct(data: CreateProductInput) {
   })
   if (!category) throw AppError.notFound('Category not found')
 
-  return prisma.product.create({ data, include: PRODUCT_INCLUDE })
+  const product = await prisma.product.create({ data, include: PRODUCT_INCLUDE })
+  void indexProduct(product.id)
+  return product
 }
 
 export async function updateProduct(id: string, data: UpdateProductInput) {
@@ -149,12 +152,15 @@ export async function updateProduct(id: string, data: UpdateProductInput) {
     if (!category) throw AppError.notFound('Category not found')
   }
 
-  return prisma.product.update({ where: { id }, data, include: PRODUCT_INCLUDE })
+  const product = await prisma.product.update({ where: { id }, data, include: PRODUCT_INCLUDE })
+  void indexProduct(product.id)
+  return product
 }
 
 export async function deleteProduct(id: string) {
   await getProductById(id)
   await prisma.product.delete({ where: { id } })
+  void deleteProductFromIndex(id)
 }
 
 export async function listVariants(productId: string) {
@@ -196,10 +202,12 @@ export async function adjustStock(
       )
   }
 
-  return prisma.productVariant.update({
+  const updated = await prisma.productVariant.update({
     where: { id: variantId },
     data: { stock: newStock },
   })
+  void indexProduct(productId)
+  return updated
 }
 
 export async function createVariant(
