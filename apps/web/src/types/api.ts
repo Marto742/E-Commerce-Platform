@@ -133,3 +133,35 @@ export interface RatingSummary {
   count: number
   distribution: Record<number, number>
 }
+
+// ─── Search ───────────────────────────────────────────────────────────────────
+
+export interface SearchHit {
+  id: string
+  name: string
+  slug: string
+  description: string
+  categoryId: string
+  categoryName: string
+  basePrice: number
+  comparePrice: number | null
+  imageUrl: string | null
+  inStock: boolean
+  isFeatured: boolean
+  minPrice: number
+  maxPrice: number
+}
+
+export interface SearchMeta {
+  query: string
+  page: number
+  limit: number
+  total: number
+  totalPages: number
+  processingTimeMs: number
+}
+
+export interface SearchResponse {
+  data: SearchHit[]
+  meta: SearchMeta
+}

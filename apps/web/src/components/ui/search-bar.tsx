@@ -9,10 +9,8 @@ import { cn } from '@repo/ui'
 import { Button } from '@repo/ui'
 import { useSearchSuggestions } from '@/hooks/use-search-suggestions'
 
-function formatPrice(price: string) {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(
-    parseFloat(price)
-  )
+function formatPrice(price: number) {
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(price)
 }
 
 interface SearchBarProps {
@@ -30,6 +28,7 @@ export function SearchBar({ className }: SearchBarProps) {
 
   const { data, isFetching } = useSearchSuggestions(query)
   const suggestions = useMemo(() => data?.data ?? [], [data])
+
   const showDropdown = open && query.trim().length >= 2
 
   // Focus input when opened
@@ -73,7 +72,7 @@ export function SearchBar({ className }: SearchBarProps) {
     if (activeIndex >= 0 && suggestions[activeIndex]) {
       router.push(`/products/${suggestions[activeIndex].slug}`)
     } else {
-      router.push(`/products?search=${encodeURIComponent(q)}`)
+      router.push(`/search?q=${encodeURIComponent(q)}`)
     }
     close()
   }
@@ -125,55 +124,52 @@ export function SearchBar({ className }: SearchBarProps) {
                 <p className="px-4 py-3 text-sm text-muted-foreground">No products found.</p>
               ) : (
                 <ul role="listbox">
-                  {suggestions.map((product, i) => {
-                    const image = product.images?.[0]
-                    return (
-                      <li key={product.id} role="option" aria-selected={activeIndex === i}>
-                        <Link
-                          href={`/products/${product.slug}`}
-                          onClick={close}
-                          className={cn(
-                            'flex items-center gap-3 px-3 py-2.5 text-sm transition-colors',
-                            activeIndex === i ? 'bg-accent text-foreground' : 'hover:bg-accent/60'
+                  {suggestions.map((hit, i) => (
+                    <li key={hit.id} role="option" aria-selected={activeIndex === i}>
+                      <Link
+                        href={`/products/${hit.slug}`}
+                        onClick={close}
+                        className={cn(
+                          'flex items-center gap-3 px-3 py-2.5 text-sm transition-colors',
+                          activeIndex === i ? 'bg-accent text-foreground' : 'hover:bg-accent/60'
+                        )}
+                        onMouseEnter={() => setActiveIndex(i)}
+                      >
+                        {/* Thumbnail */}
+                        <div className="size-10 shrink-0 overflow-hidden rounded-md bg-muted">
+                          {hit.imageUrl ? (
+                            <Image
+                              src={hit.imageUrl}
+                              alt={hit.name}
+                              width={40}
+                              height={40}
+                              className="size-full object-cover"
+                            />
+                          ) : (
+                            <div className="size-full" />
                           )}
-                          onMouseEnter={() => setActiveIndex(i)}
-                        >
-                          {/* Thumbnail */}
-                          <div className="size-10 shrink-0 overflow-hidden rounded-md bg-muted">
-                            {image ? (
-                              <Image
-                                src={image.url}
-                                alt={image.altText ?? product.name}
-                                width={40}
-                                height={40}
-                                className="size-full object-cover"
-                              />
-                            ) : (
-                              <div className="size-full" />
-                            )}
-                          </div>
+                        </div>
 
-                          {/* Name + category */}
-                          <div className="min-w-0 flex-1">
-                            <p className="truncate font-medium text-foreground">{product.name}</p>
-                            <p className="truncate text-xs text-muted-foreground">
-                              {product.category?.name}
-                            </p>
-                          </div>
+                        {/* Name + category */}
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate font-medium text-foreground">{hit.name}</p>
+                          <p className="truncate text-xs text-muted-foreground">
+                            {hit.categoryName}
+                          </p>
+                        </div>
 
-                          {/* Price */}
-                          <span className="shrink-0 font-medium text-foreground">
-                            {formatPrice(product.basePrice)}
-                          </span>
-                        </Link>
-                      </li>
-                    )
-                  })}
+                        {/* Price */}
+                        <span className="shrink-0 font-medium text-foreground">
+                          {formatPrice(hit.basePrice)}
+                        </span>
+                      </Link>
+                    </li>
+                  ))}
 
                   {/* See all results row */}
                   <li role="option" aria-selected={activeIndex === allResultsIndex}>
                     <Link
-                      href={`/products?search=${encodeURIComponent(query.trim())}`}
+                      href={`/search?q=${encodeURIComponent(query.trim())}`}
                       onClick={close}
                       className={cn(
                         'flex items-center justify-between border-t px-4 py-2.5 text-sm font-medium text-primary transition-colors',
