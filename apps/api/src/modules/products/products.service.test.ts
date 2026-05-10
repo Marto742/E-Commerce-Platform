@@ -15,6 +15,11 @@ import {
   deleteVariant,
 } from './products.service'
 
+vi.mock('@/lib/search-indexer', () => ({
+  indexProduct: vi.fn().mockResolvedValue(undefined),
+  deleteProductFromIndex: vi.fn().mockResolvedValue(undefined),
+}))
+
 vi.mock('@/lib/prisma', () => ({
   prisma: {
     product: {
