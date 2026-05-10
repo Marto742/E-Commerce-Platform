@@ -2,6 +2,7 @@ import 'dotenv/config'
 import { createApp } from './app'
 import { env } from './config/env'
 import { prisma } from './lib/prisma'
+import { setupSearchSchema } from './lib/search-schema'
 
 const app = createApp()
 
@@ -10,6 +11,10 @@ const server = app.listen(env.PORT, () => {
   console.log(`   URL:         http://localhost:${env.PORT}/v1`)
   console.log(`   Health:      http://localhost:${env.PORT}/v1/health`)
   console.log(`   Environment: ${env.NODE_ENV}\n`)
+
+  setupSearchSchema().catch((err) => {
+    console.error('[search] Failed to configure Meilisearch schema:', err)
+  })
 })
 
 // ─── Graceful shutdown ────────────────────────────────────────────────────────

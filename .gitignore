@@ -54,6 +54,14 @@ desktop.ini
 tmp/
 temp/
 
+# Meilisearch
+meilisearch.exe
+meilisearch-data/
+typesense-server-*.deb
+
+# Local assets
+images/
+
 # Local planning & design docs (not part of the codebase)
 docs/
 plans/
