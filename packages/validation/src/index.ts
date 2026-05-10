@@ -102,3 +102,7 @@ export type {
   SlugParamInput,
   ProductIdParamInput,
 } from './schemas/common'
+
+// Search
+export { searchQuerySchema } from './schemas/search'
+export type { SearchQueryInput } from './schemas/search'

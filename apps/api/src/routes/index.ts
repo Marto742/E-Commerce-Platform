@@ -15,6 +15,7 @@ import authRouter from '@/modules/auth/auth.routes'
 import usersRouter from '@/modules/users/users.routes'
 import adminRouter from '@/modules/admin/admin.routes'
 import uploadsRouter from '@/modules/uploads/uploads.routes'
+import searchRouter from '@/modules/search/search.routes'
 
 const router: Router = Router()
 
@@ -61,6 +62,9 @@ router.use('/coupons', couponsRouter)
 
 // ── Shipping ──────────────────────────────────────────────────────────────────
 router.use('/shipping', shippingRouter)
+
+// ── Search ────────────────────────────────────────────────
+router.use('/search', searchRouter)
 
 // ── Admin ─────────────────────────────────────────────────
 router.use('/admin', adminRouter)
