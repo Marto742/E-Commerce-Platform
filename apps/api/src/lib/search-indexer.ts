@@ -27,11 +27,38 @@ type ProductWithRelations = {
   variants: ProductVariantRow[]
 }
 
+/** Average rating + review count for a product, used to populate search facets. */
+type RatingSummary = { rating: number; reviewCount: number }
+
+const NO_RATING: RatingSummary = { rating: 0, reviewCount: 0 }
+
 function toNum(v: { toNumber(): number } | number): number {
   return typeof v === 'number' ? v : v.toNumber()
 }
 
-function toDocument(product: ProductWithRelations): ProductDocument {
+/** Aggregate review rating/count for a set of products in a single query. */
+async function ratingsByProduct(productIds: string[]): Promise<Map<string, RatingSummary>> {
+  const map = new Map<string, RatingSummary>()
+  if (productIds.length === 0) return map
+
+  const grouped = await prisma.review.groupBy({
+    by: ['productId'],
+    where: { productId: { in: productIds } },
+    _avg: { rating: true },
+    _count: { rating: true },
+  })
+
+  for (const row of grouped) {
+    map.set(row.productId, {
+      // Round to 1 decimal to match the product rating summary endpoint
+      rating: Math.round((row._avg.rating ?? 0) * 10) / 10,
+      reviewCount: row._count.rating,
+    })
+  }
+  return map
+}
+
+function toDocument(product: ProductWithRelations, ratingSummary: RatingSummary): ProductDocument {
   const prices = product.variants.map((v) => toNum(v.price))
   const minPrice = prices.length ? Math.min(...prices) : toNum(product.basePrice)
   const maxPrice = prices.length ? Math.max(...prices) : toNum(product.basePrice)
@@ -54,6 +81,9 @@ function toDocument(product: ProductWithRelations): ProductDocument {
     minPrice,
     maxPrice,
     inStock,
+    rating: ratingSummary.rating,
+    reviewCount: ratingSummary.reviewCount,
+    ratingBucket: Math.floor(ratingSummary.rating),
     createdAt: Math.floor(product.createdAt.getTime() / 1000),
   }
 }
@@ -80,7 +110,8 @@ export async function reindexAllProducts(): Promise<{ indexed: number }> {
 
     if (!products.length) break
 
-    const docs = products.map(toDocument)
+    const ratings = await ratingsByProduct(products.map((p) => p.id))
+    const docs = products.map((p) => toDocument(p, ratings.get(p.id) ?? NO_RATING))
     await index.addDocuments(docs, { primaryKey: 'id' })
     indexed += docs.length
     cursor = products[products.length - 1].id
@@ -101,7 +132,10 @@ export async function indexProduct(productId: string): Promise<void> {
     return
   }
 
-  await meili.index(PRODUCTS_INDEX).addDocuments([toDocument(product)], { primaryKey: 'id' })
+  const ratings = await ratingsByProduct([productId])
+  await meili
+    .index(PRODUCTS_INDEX)
+    .addDocuments([toDocument(product, ratings.get(productId) ?? NO_RATING)], { primaryKey: 'id' })
 }
 
 /** Remove a product from the search index. */

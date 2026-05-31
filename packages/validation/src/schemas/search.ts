@@ -7,6 +7,7 @@ export const searchQuerySchema = z.object({
   categoryId: z.string().optional(),
   minPrice: z.coerce.number().min(0).optional(),
   maxPrice: z.coerce.number().min(0).optional(),
+  minRating: z.coerce.number().int().min(1).max(5).optional(),
   inStock: z
     .string()
     .optional()
@@ -15,7 +16,7 @@ export const searchQuerySchema = z.object({
     .string()
     .optional()
     .transform((v) => (v === 'true' ? true : v === 'false' ? false : undefined)),
-  sortBy: z.enum(['basePrice', 'minPrice', 'createdAt', 'name']).optional(),
+  sortBy: z.enum(['basePrice', 'minPrice', 'createdAt', 'name', 'rating']).optional(),
   sortOrder: z.enum(['asc', 'desc']).default('asc'),
 })
 

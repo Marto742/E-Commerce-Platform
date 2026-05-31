@@ -38,11 +38,17 @@ const mockHit = {
   isFeatured: false,
   minPrice: 29.99,
   maxPrice: 49.99,
+  rating: 4.5,
+  reviewCount: 12,
 }
 
 const mockResult: SearchResult = {
   hits: [mockHit] as SearchResult['hits'],
   meta: { query: 'widget', page: 1, limit: 20, total: 1, totalPages: 1, processingTimeMs: 2 },
+  facets: {
+    categories: { 'cat-1': 1 },
+    ratings: { '4': 1 },
+  },
 }
 
 beforeEach(() => {
@@ -61,11 +67,23 @@ describe('GET /v1/search', () => {
     expect(res.body.meta.total).toBe(1)
   })
 
+  it('returns facet counts', async () => {
+    vi.mocked(searchService.searchProducts).mockResolvedValue(mockResult)
+
+    const res = await request(app).get('/v1/search?q=widget')
+
+    expect(res.status).toBe(200)
+    expect(res.body.facets).toEqual({
+      categories: { 'cat-1': 1 },
+      ratings: { '4': 1 },
+    })
+  })
+
   it('passes filters to service', async () => {
     vi.mocked(searchService.searchProducts).mockResolvedValue(mockResult)
 
     await request(app).get(
-      '/v1/search?q=widget&categoryId=cat-1&minPrice=10&maxPrice=100&inStock=true'
+      '/v1/search?q=widget&categoryId=cat-1&minPrice=10&maxPrice=100&minRating=4&inStock=true'
     )
 
     expect(searchService.searchProducts).toHaveBeenCalledWith(
@@ -74,9 +92,31 @@ describe('GET /v1/search', () => {
         categoryId: 'cat-1',
         minPrice: 10,
         maxPrice: 100,
+        minRating: 4,
         inStock: true,
       })
     )
+  })
+
+  it('rejects an out-of-range minRating', async () => {
+    const res = await request(app).get('/v1/search?q=widget&minRating=9')
+    expect(res.status).toBe(422)
+  })
+
+  it('accepts rating as a sort option', async () => {
+    vi.mocked(searchService.searchProducts).mockResolvedValue(mockResult)
+
+    const res = await request(app).get('/v1/search?q=widget&sortBy=rating&sortOrder=desc')
+
+    expect(res.status).toBe(200)
+    expect(searchService.searchProducts).toHaveBeenCalledWith(
+      expect.objectContaining({ sortBy: 'rating', sortOrder: 'desc' })
+    )
+  })
+
+  it('rejects an unknown sort field', async () => {
+    const res = await request(app).get('/v1/search?q=widget&sortBy=bogus')
+    expect(res.status).toBe(422)
   })
 
   it('returns 422 when q is missing', async () => {

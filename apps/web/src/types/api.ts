@@ -150,6 +150,8 @@ export interface SearchHit {
   isFeatured: boolean
   minPrice: number
   maxPrice: number
+  rating: number
+  reviewCount: number
 }
 
 export interface SearchMeta {
@@ -161,7 +163,15 @@ export interface SearchMeta {
   processingTimeMs: number
 }
 
+export interface SearchFacets {
+  /** categoryId → number of matching products */
+  categories: Record<string, number>
+  /** rating bucket (floor of average, "1"–"5") → number of matching products */
+  ratings: Record<string, number>
+}
+
 export interface SearchResponse {
   data: SearchHit[]
   meta: SearchMeta
+  facets: SearchFacets
 }

@@ -6,7 +6,7 @@ export const search: RequestHandler = async (req, res, next) => {
   try {
     const query = searchQuerySchema.parse(req.query)
     const result = await searchProducts(query)
-    res.status(200).json({ data: result.hits, meta: result.meta })
+    res.status(200).json({ data: result.hits, meta: result.meta, facets: result.facets })
   } catch (err) {
     next(err)
   }

@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { cn } from '@repo/ui'
+import { StarRating } from '@/components/ui/star-rating'
 import type { SearchHit } from '@/types/api'
 
 interface SearchHitCardProps {
@@ -49,6 +50,12 @@ export function SearchHitCard({ hit, className }: SearchHitCardProps) {
         <p className="line-clamp-2 text-sm font-medium leading-snug text-foreground group-hover:text-primary">
           {hit.name}
         </p>
+        {hit.reviewCount > 0 && (
+          <span className="flex items-center gap-1">
+            <StarRating rating={hit.rating} size="sm" />
+            <span className="text-xs text-muted-foreground">({hit.reviewCount})</span>
+          </span>
+        )}
         <div className="mt-auto pt-2">
           {hit.comparePrice && hit.comparePrice > hit.basePrice ? (
             <div className="flex items-baseline gap-1.5">

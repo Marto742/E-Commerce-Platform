@@ -19,6 +19,9 @@ export interface ProductDocument {
   minPrice: number
   maxPrice: number
   inStock: boolean
+  rating: number // average review rating (0 when no reviews) — for display
+  reviewCount: number
+  ratingBucket: number // floor(rating), 0 when no reviews — for filtering & facets
   createdAt: number // unix timestamp for sorting
 }
 
@@ -40,8 +43,9 @@ export async function setupSearchSchema(): Promise<void> {
       'basePrice',
       'minPrice',
       'maxPrice',
+      'ratingBucket',
     ],
-    sortableAttributes: ['basePrice', 'minPrice', 'createdAt', 'name'],
+    sortableAttributes: ['basePrice', 'minPrice', 'createdAt', 'name', 'rating'],
     rankingRules: ['words', 'typo', 'proximity', 'attribute', 'sort', 'exactness'],
     typoTolerance: {
       enabled: true,

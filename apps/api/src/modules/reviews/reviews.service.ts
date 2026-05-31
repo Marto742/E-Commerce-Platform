@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import { AppError } from '@/utils/AppError'
 import { buildPaginationMeta } from '@/utils/response'
+import { indexProduct } from '@/lib/search-indexer'
 import type { CreateReviewInput, UpdateReviewInput, ReviewQueryInput } from '@repo/validation'
 
 // ─── Shared selects ───────────────────────────────────────────────────────────
@@ -150,7 +151,7 @@ export async function createReview(userId: string, data: CreateReviewInput) {
     select: { id: true },
   })
 
-  return prisma.review.create({
+  const review = await prisma.review.create({
     data: {
       userId,
       productId: data.productId,
@@ -164,6 +165,10 @@ export async function createReview(userId: string, data: CreateReviewInput) {
       product: PRODUCT_SELECT,
     },
   })
+
+  // Refresh the search index so rating facets/sorting stay accurate
+  void indexProduct(data.productId)
+  return review
 }
 
 // ─── Update review ────────────────────────────────────────────────────────────
@@ -171,12 +176,12 @@ export async function createReview(userId: string, data: CreateReviewInput) {
 export async function updateReview(userId: string, reviewId: string, data: UpdateReviewInput) {
   const review = await prisma.review.findUnique({
     where: { id: reviewId },
-    select: { id: true, userId: true },
+    select: { id: true, userId: true, productId: true },
   })
   if (!review) throw AppError.notFound('Review not found')
   if (review.userId !== userId) throw AppError.forbidden('You can only edit your own reviews')
 
-  return prisma.review.update({
+  const updated = await prisma.review.update({
     where: { id: reviewId },
     data,
     include: {
@@ -184,6 +189,9 @@ export async function updateReview(userId: string, reviewId: string, data: Updat
       product: PRODUCT_SELECT,
     },
   })
+
+  void indexProduct(review.productId)
+  return updated
 }
 
 // ─── Delete review ────────────────────────────────────────────────────────────
@@ -191,11 +199,12 @@ export async function updateReview(userId: string, reviewId: string, data: Updat
 export async function deleteReview(userId: string, reviewId: string, asAdmin: boolean) {
   const review = await prisma.review.findUnique({
     where: { id: reviewId },
-    select: { id: true, userId: true },
+    select: { id: true, userId: true, productId: true },
   })
   if (!review) throw AppError.notFound('Review not found')
   if (!asAdmin && review.userId !== userId)
     throw AppError.forbidden('You can only delete your own reviews')
 
   await prisma.review.delete({ where: { id: reviewId } })
+  void indexProduct(review.productId)
 }

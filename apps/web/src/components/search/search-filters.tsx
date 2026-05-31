@@ -4,12 +4,15 @@ import { ChevronDown, SlidersHorizontal } from 'lucide-react'
 import { useState } from 'react'
 import { cn } from '@repo/ui'
 import { useCategories } from '@/hooks/use-categories'
+import { StarRating } from '@/components/ui/star-rating'
+import type { SearchFacets } from '@/types/api'
 import type { SearchFiltersState } from './types'
 
 const SORT_OPTIONS = [
   { value: '', label: 'Relevance' },
   { value: 'basePrice:asc', label: 'Price: Low to High' },
   { value: 'basePrice:desc', label: 'Price: High to Low' },
+  { value: 'rating:desc', label: 'Top rated' },
   { value: 'createdAt:desc', label: 'Newest' },
   { value: 'name:asc', label: 'Name: A–Z' },
 ] as const
@@ -22,9 +25,26 @@ const PRICE_PRESETS = [
   { label: 'Over $200', min: '200', max: '' },
 ]
 
+const RATING_OPTIONS = [4, 3, 2, 1] as const
+
+/** Cumulative count of products with floor(rating) >= `stars` (i.e. "stars & up"). */
+function ratingCount(ratings: Record<string, number> | undefined, stars: number): number {
+  if (!ratings) return 0
+  let total = 0
+  for (let bucket = stars; bucket <= 5; bucket++) {
+    total += ratings[String(bucket)] ?? 0
+  }
+  return total
+}
+
 interface SearchFiltersProps {
   filters: SearchFiltersState
   onChange: (next: Partial<SearchFiltersState>) => void
+  facets?: SearchFacets
+}
+
+function FacetCount({ count }: { count: number }) {
+  return <span className="ml-auto text-xs text-muted-foreground">{count}</span>
 }
 
 function Section({
@@ -53,7 +73,7 @@ function Section({
   )
 }
 
-export function SearchFilters({ filters, onChange }: SearchFiltersProps) {
+export function SearchFilters({ filters, onChange, facets }: SearchFiltersProps) {
   const { data: categoriesData, isLoading } = useCategories()
   const topCategories = categoriesData?.data.filter((c) => !c.parentId) ?? []
 
@@ -120,19 +140,23 @@ export function SearchFilters({ filters, onChange }: SearchFiltersProps) {
               />
               <span className="text-sm text-foreground">All categories</span>
             </label>
-            {topCategories.map((cat) => (
-              <label key={cat.id} className="flex cursor-pointer items-center gap-2.5">
-                <input
-                  type="radio"
-                  name="search-category"
-                  value={cat.id}
-                  checked={filters.categoryId === cat.id}
-                  onChange={() => onChange({ categoryId: cat.id, page: 1 })}
-                  className="accent-primary"
-                />
-                <span className="text-sm text-foreground">{cat.name}</span>
-              </label>
-            ))}
+            {topCategories.map((cat) => {
+              const count = facets?.categories[cat.id]
+              return (
+                <label key={cat.id} className="flex cursor-pointer items-center gap-2.5">
+                  <input
+                    type="radio"
+                    name="search-category"
+                    value={cat.id}
+                    checked={filters.categoryId === cat.id}
+                    onChange={() => onChange({ categoryId: cat.id, page: 1 })}
+                    className="accent-primary"
+                  />
+                  <span className="text-sm text-foreground">{cat.name}</span>
+                  {count !== undefined && <FacetCount count={count} />}
+                </label>
+              )
+            })}
           </div>
         )}
       </Section>
@@ -175,6 +199,43 @@ export function SearchFilters({ filters, onChange }: SearchFiltersProps) {
             onChange={(e) => onChange({ maxPrice: e.target.value, page: 1 })}
             className="h-8 w-full rounded-md border border-input bg-background px-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           />
+        </div>
+      </Section>
+
+      {/* Rating */}
+      <Section title="Customer rating">
+        <div className="flex flex-col gap-1.5">
+          <label className="flex cursor-pointer items-center gap-2.5">
+            <input
+              type="radio"
+              name="search-rating"
+              value=""
+              checked={!filters.minRating}
+              onChange={() => onChange({ minRating: '', page: 1 })}
+              className="accent-primary"
+            />
+            <span className="text-sm text-foreground">Any rating</span>
+          </label>
+          {RATING_OPTIONS.map((stars) => {
+            const count = ratingCount(facets?.ratings, stars)
+            return (
+              <label key={stars} className="flex cursor-pointer items-center gap-2.5">
+                <input
+                  type="radio"
+                  name="search-rating"
+                  value={String(stars)}
+                  checked={filters.minRating === String(stars)}
+                  onChange={() => onChange({ minRating: String(stars), page: 1 })}
+                  className="accent-primary"
+                />
+                <span className="flex items-center gap-1.5">
+                  <StarRating rating={stars} size="sm" />
+                  <span className="text-sm text-foreground">&amp; up</span>
+                </span>
+                {facets && <FacetCount count={count} />}
+              </label>
+            )
+          })}
         </div>
       </Section>
 

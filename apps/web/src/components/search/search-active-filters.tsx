@@ -13,6 +13,7 @@ interface SearchActiveFiltersProps {
 const SORT_LABELS: Record<string, string> = {
   'basePrice:asc': 'Price ↑',
   'basePrice:desc': 'Price ↓',
+  'rating:desc': 'Top rated',
   'createdAt:desc': 'Newest',
   'name:asc': 'Name A–Z',
 }
@@ -37,6 +38,12 @@ export function SearchActiveFilters({ filters, onChange, onClearAll }: SearchAct
           ? `From $${filters.minPrice}`
           : `Up to $${filters.maxPrice}`
     chips.push({ label, onRemove: () => onChange({ minPrice: '', maxPrice: '', page: 1 }) })
+  }
+  if (filters.minRating) {
+    chips.push({
+      label: `${filters.minRating}★ & up`,
+      onRemove: () => onChange({ minRating: '', page: 1 }),
+    })
   }
   if (filters.inStock) {
     chips.push({ label: 'In stock', onRemove: () => onChange({ inStock: false, page: 1 }) })

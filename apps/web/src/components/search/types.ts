@@ -3,6 +3,8 @@ export interface SearchFiltersState {
   categoryId: string
   minPrice: string
   maxPrice: string
+  /** Minimum average rating ("1"–"5"); empty string = any rating */
+  minRating: string
   inStock: boolean
   /** Empty string = relevance (Meilisearch default ranking) */
   sortBy: string
@@ -15,6 +17,7 @@ export const DEFAULT_SEARCH_FILTERS: SearchFiltersState = {
   categoryId: '',
   minPrice: '',
   maxPrice: '',
+  minRating: '',
   inStock: false,
   sortBy: '',
   sortOrder: 'asc',

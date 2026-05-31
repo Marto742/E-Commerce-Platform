@@ -10,6 +10,7 @@ export interface SearchResultsParams {
   categoryId?: string
   minPrice?: string
   maxPrice?: string
+  minRating?: string
   inStock?: boolean
   sortBy?: string
   sortOrder?: 'asc' | 'desc'
@@ -47,6 +48,7 @@ export function useSearchResults(params: SearchResultsParams) {
           ...(params.categoryId && { categoryId: params.categoryId }),
           ...(params.minPrice && { minPrice: params.minPrice }),
           ...(params.maxPrice && { maxPrice: params.maxPrice }),
+          ...(params.minRating && { minRating: params.minRating }),
           ...(params.inStock && { inStock: true }),
           ...(params.sortBy && { sortBy: params.sortBy, sortOrder: params.sortOrder ?? 'asc' }),
         },

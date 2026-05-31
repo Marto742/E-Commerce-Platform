@@ -17,6 +17,7 @@ function filtersFromSearchParams(params: URLSearchParams): SearchFiltersState {
     categoryId: params.get('categoryId') ?? '',
     minPrice: params.get('minPrice') ?? '',
     maxPrice: params.get('maxPrice') ?? '',
+    minRating: params.get('minRating') ?? '',
     inStock: params.get('inStock') === 'true',
     sortBy: params.get('sortBy') ?? '',
     sortOrder: (params.get('sortOrder') as 'asc' | 'desc') ?? 'asc',
@@ -30,6 +31,7 @@ function buildSearchParams(filters: SearchFiltersState): URLSearchParams {
   if (filters.categoryId) params.set('categoryId', filters.categoryId)
   if (filters.minPrice) params.set('minPrice', filters.minPrice)
   if (filters.maxPrice) params.set('maxPrice', filters.maxPrice)
+  if (filters.minRating) params.set('minRating', filters.minRating)
   if (filters.inStock) params.set('inStock', 'true')
   if (filters.sortBy) {
     params.set('sortBy', filters.sortBy)
@@ -93,6 +95,7 @@ export function SearchResults() {
     categoryId: filters.categoryId,
     minPrice: filters.minPrice,
     maxPrice: filters.maxPrice,
+    minRating: filters.minRating,
     inStock: filters.inStock,
     sortBy: filters.sortBy,
     sortOrder: filters.sortOrder,
@@ -100,9 +103,15 @@ export function SearchResults() {
 
   const hits = data?.data ?? []
   const meta = data?.meta
+  const facets = data?.facets
 
   const hasActiveFilters =
-    filters.categoryId || filters.minPrice || filters.maxPrice || filters.inStock || filters.sortBy
+    filters.categoryId ||
+    filters.minPrice ||
+    filters.maxPrice ||
+    filters.minRating ||
+    filters.inStock ||
+    filters.sortBy
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
@@ -168,7 +177,7 @@ export function SearchResults() {
           <div className="flex gap-8">
             {/* Desktop sidebar */}
             <div className="hidden w-56 shrink-0 lg:block">
-              <SearchFilters filters={filters} onChange={updateFilters} />
+              <SearchFilters filters={filters} onChange={updateFilters} facets={facets} />
             </div>
 
             {/* Results */}
@@ -236,7 +245,7 @@ export function SearchResults() {
               </button>
             </div>
             <div className="flex-1 overflow-y-auto px-4 pb-6">
-              <SearchFilters filters={filters} onChange={updateFilters} />
+              <SearchFilters filters={filters} onChange={updateFilters} facets={facets} />
             </div>
             <div className="border-t px-4 py-3">
               <button

@@ -17,6 +17,8 @@ const baseHit: SearchHit = {
   isFeatured: false,
   minPrice: 29.99,
   maxPrice: 29.99,
+  rating: 0,
+  reviewCount: 0,
 }
 
 describe('SearchHitCard', () => {
@@ -50,5 +52,15 @@ describe('SearchHitCard', () => {
     // base price still renders, but there should be no line-through element
     expect(screen.getByText('$30.00')).toBeInTheDocument()
     expect(container.querySelector('.line-through')).toBeNull()
+  })
+
+  it('shows the review count when the product has reviews', () => {
+    render(<SearchHitCard hit={{ ...baseHit, rating: 4.5, reviewCount: 12 }} />)
+    expect(screen.getByText('(12)')).toBeInTheDocument()
+  })
+
+  it('hides the rating when there are no reviews', () => {
+    render(<SearchHitCard hit={{ ...baseHit, rating: 0, reviewCount: 0 }} />)
+    expect(screen.queryByText('(0)')).toBeNull()
   })
 })
