@@ -4,9 +4,20 @@ import { useQuery } from '@tanstack/react-query'
 import { api } from '@/lib/api-client'
 import type { SearchResponse } from '@/types/api'
 
+export interface SearchResultsParams {
+  q: string
+  page?: number
+  categoryId?: string
+  minPrice?: string
+  maxPrice?: string
+  inStock?: boolean
+  sortBy?: string
+  sortOrder?: 'asc' | 'desc'
+}
+
 export const searchKeys = {
   suggestions: (query: string) => ['search-suggestions', query] as const,
-  results: (query: string, page: number) => ['search-results', query, page] as const,
+  results: (params: SearchResultsParams) => ['search-results', params] as const,
 }
 
 export function useSearchSuggestions(query: string) {
@@ -23,13 +34,22 @@ export function useSearchSuggestions(query: string) {
   })
 }
 
-export function useSearchResults(query: string, page = 1) {
-  const trimmed = query.trim()
+export function useSearchResults(params: SearchResultsParams) {
+  const trimmed = params.q.trim()
   return useQuery({
-    queryKey: searchKeys.results(trimmed, page),
+    queryKey: searchKeys.results({ ...params, q: trimmed }),
     queryFn: () =>
       api.get<SearchResponse>('/search', {
-        params: { q: trimmed, limit: 24, page },
+        params: {
+          q: trimmed,
+          limit: 24,
+          page: params.page ?? 1,
+          ...(params.categoryId && { categoryId: params.categoryId }),
+          ...(params.minPrice && { minPrice: params.minPrice }),
+          ...(params.maxPrice && { maxPrice: params.maxPrice }),
+          ...(params.inStock && { inStock: true }),
+          ...(params.sortBy && { sortBy: params.sortBy, sortOrder: params.sortOrder ?? 'asc' }),
+        },
       }),
     enabled: trimmed.length >= 1,
     staleTime: 60_000,
