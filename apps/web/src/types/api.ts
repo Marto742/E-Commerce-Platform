@@ -163,6 +163,8 @@ export interface SearchHit {
 
 export interface SearchMeta {
   query: string
+  /** "Did you mean" correction for a likely typo, or null */
+  suggestion: string | null
   page: number
   limit: number
   total: number

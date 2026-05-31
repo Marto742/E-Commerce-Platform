@@ -1,9 +1,14 @@
 import { meili } from '@/lib/meilisearch'
 import { PRODUCTS_INDEX, type ProductDocument } from '@/lib/search-schema'
+import { suggestCorrection } from './spellcheck.service'
 import type { SearchQueryInput } from '@repo/validation'
 
 // Attributes Meilisearch returns facet counts for. ratingBucket = floor(avg rating).
 const FACET_ATTRIBUTES = ['categoryId', 'ratingBucket']
+
+// Only offer a "did you mean" suggestion when the query returned few results —
+// a plentiful result set means the query worked, typo or not.
+const SUGGESTION_MAX_RESULTS = 5
 
 // Non-HTML sentinels wrapped around query matches. The web client parses these
 // into <mark> elements — using plain HTML tags would be an XSS vector because
@@ -85,14 +90,18 @@ export async function searchProducts(query: SearchQueryInput) {
     }
   })
 
+  const total = result.estimatedTotalHits ?? 0
+  const suggestion = total < SUGGESTION_MAX_RESULTS ? await suggestCorrection(q) : null
+
   return {
     hits,
     meta: {
       query: q,
+      suggestion,
       page,
       limit,
-      total: result.estimatedTotalHits ?? 0,
-      totalPages: Math.ceil((result.estimatedTotalHits ?? 0) / limit),
+      total,
+      totalPages: Math.ceil(total / limit),
       processingTimeMs: result.processingTimeMs,
     },
     // Facet counts for the current result set: { value: count }

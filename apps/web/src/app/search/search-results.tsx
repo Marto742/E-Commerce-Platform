@@ -138,6 +138,18 @@ export function SearchResults() {
             {meta.processingTimeMs != null && ` · ${meta.processingTimeMs}ms`}
           </p>
         )}
+        {meta?.suggestion && (
+          <p className="mt-1 text-sm text-muted-foreground">
+            Did you mean{' '}
+            <button
+              onClick={() => updateFilters({ q: meta.suggestion as string, page: 1 })}
+              className="font-medium italic text-primary underline-offset-2 hover:underline"
+            >
+              {meta.suggestion}
+            </button>
+            ?
+          </p>
+        )}
       </div>
 
       {!filters.q ? (

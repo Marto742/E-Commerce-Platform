@@ -44,7 +44,15 @@ const mockHit = {
 
 const mockResult: SearchResult = {
   hits: [mockHit] as SearchResult['hits'],
-  meta: { query: 'widget', page: 1, limit: 20, total: 1, totalPages: 1, processingTimeMs: 2 },
+  meta: {
+    query: 'widget',
+    suggestion: null,
+    page: 1,
+    limit: 20,
+    total: 1,
+    totalPages: 1,
+    processingTimeMs: 2,
+  },
   facets: {
     categories: { 'cat-1': 1 },
     ratings: { '4': 1 },
