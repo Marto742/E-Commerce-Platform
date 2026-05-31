@@ -4,6 +4,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { cn } from '@repo/ui'
 import { StarRating } from '@/components/ui/star-rating'
+import { HighlightedText } from '@/components/ui/highlighted-text'
 import type { SearchHit } from '@/types/api'
 
 interface SearchHitCardProps {
@@ -46,10 +47,17 @@ export function SearchHitCard({ hit, className }: SearchHitCardProps) {
 
       {/* Info */}
       <div className="flex flex-1 flex-col gap-1 p-3">
-        <p className="text-xs text-muted-foreground">{hit.categoryName}</p>
-        <p className="line-clamp-2 text-sm font-medium leading-snug text-foreground group-hover:text-primary">
-          {hit.name}
+        <p className="text-xs text-muted-foreground">
+          <HighlightedText text={hit.highlight?.categoryName ?? hit.categoryName} />
         </p>
+        <p className="line-clamp-2 text-sm font-medium leading-snug text-foreground group-hover:text-primary">
+          <HighlightedText text={hit.highlight?.name ?? hit.name} />
+        </p>
+        {hit.highlight?.description && (
+          <p className="line-clamp-2 text-xs leading-snug text-muted-foreground">
+            <HighlightedText text={hit.highlight.description} />
+          </p>
+        )}
         {hit.reviewCount > 0 && (
           <span className="flex items-center gap-1">
             <StarRating rating={hit.rating} size="sm" />

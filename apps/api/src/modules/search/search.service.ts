@@ -5,6 +5,13 @@ import type { SearchQueryInput } from '@repo/validation'
 // Attributes Meilisearch returns facet counts for. ratingBucket = floor(avg rating).
 const FACET_ATTRIBUTES = ['categoryId', 'ratingBucket']
 
+// Non-HTML sentinels wrapped around query matches. The web client parses these
+// into <mark> elements — using plain HTML tags would be an XSS vector because
+// Meilisearch does not escape the surrounding content in `_formatted`.
+// Keep in sync with apps/web/src/components/ui/highlighted-text.tsx
+const HL_PRE = '[[hl]]'
+const HL_POST = '[[/hl]]'
+
 export async function searchProducts(query: SearchQueryInput) {
   const {
     q,
@@ -54,12 +61,32 @@ export async function searchProducts(query: SearchQueryInput) {
       'rating',
       'reviewCount',
     ],
+    attributesToHighlight: ['name', 'description', 'categoryName'],
+    attributesToCrop: ['description'],
+    cropLength: 25,
+    highlightPreTag: HL_PRE,
+    highlightPostTag: HL_POST,
   })
 
   const distribution = result.facetDistribution ?? {}
 
+  // Surface a slim `highlight` payload. The description snippet is only included
+  // when the query actually matched it (otherwise it's just the cropped lead-in).
+  const hits = result.hits.map((hit) => {
+    const { _formatted, ...product } = hit
+    const description = _formatted?.description
+    return {
+      ...product,
+      highlight: {
+        name: _formatted?.name ?? hit.name,
+        categoryName: _formatted?.categoryName ?? hit.categoryName,
+        description: description?.includes(HL_PRE) ? description : null,
+      },
+    }
+  })
+
   return {
-    hits: result.hits,
+    hits,
     meta: {
       query: q,
       page,

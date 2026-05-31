@@ -63,4 +63,47 @@ describe('SearchHitCard', () => {
     render(<SearchHitCard hit={{ ...baseHit, rating: 0, reviewCount: 0 }} />)
     expect(screen.queryByText('(0)')).toBeNull()
   })
+
+  it('highlights matched terms in the name', () => {
+    render(
+      <SearchHitCard
+        hit={{
+          ...baseHit,
+          highlight: {
+            name: 'Blue [[hl]]Widget[[/hl]]',
+            categoryName: 'Gadgets',
+            description: null,
+          },
+        }}
+      />
+    )
+    expect(screen.getByText('Widget').tagName).toBe('MARK')
+  })
+
+  it('shows a highlighted description snippet only when the query matched it', () => {
+    const { container, rerender } = render(
+      <SearchHitCard
+        hit={{
+          ...baseHit,
+          highlight: {
+            name: 'Blue Widget',
+            categoryName: 'Gadgets',
+            description: '…a sturdy [[hl]]gadget[[/hl]] for daily use…',
+          },
+        }}
+      />
+    )
+    expect(screen.getByText('gadget').tagName).toBe('MARK')
+
+    // No snippet when description did not match
+    rerender(
+      <SearchHitCard
+        hit={{
+          ...baseHit,
+          highlight: { name: 'Blue Widget', categoryName: 'Gadgets', description: null },
+        }}
+      />
+    )
+    expect(container.textContent).not.toContain('sturdy')
+  })
 })

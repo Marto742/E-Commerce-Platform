@@ -9,6 +9,7 @@ import { cn } from '@repo/ui'
 import { Button } from '@repo/ui'
 import { useSearchSuggestions } from '@/hooks/use-search-suggestions'
 import { useDebounce } from '@/hooks/use-debounce'
+import { HighlightedText } from '@/components/ui/highlighted-text'
 
 function formatPrice(price: number) {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(price)
@@ -154,9 +155,13 @@ export function SearchBar({ className }: SearchBarProps) {
 
                         {/* Name + category */}
                         <div className="min-w-0 flex-1">
-                          <p className="truncate font-medium text-foreground">{hit.name}</p>
+                          <p className="truncate font-medium text-foreground">
+                            <HighlightedText text={hit.highlight?.name ?? hit.name} />
+                          </p>
                           <p className="truncate text-xs text-muted-foreground">
-                            {hit.categoryName}
+                            <HighlightedText
+                              text={hit.highlight?.categoryName ?? hit.categoryName}
+                            />
                           </p>
                         </div>
 

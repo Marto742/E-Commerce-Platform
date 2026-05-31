@@ -152,6 +152,13 @@ export interface SearchHit {
   maxPrice: number
   rating: number
   reviewCount: number
+  /** Query matches wrapped in [[hl]]…[[/hl]] markers; render with HighlightedText */
+  highlight?: {
+    name: string
+    categoryName: string
+    /** Cropped snippet, present only when the query matched the description */
+    description: string | null
+  }
 }
 
 export interface SearchMeta {
