@@ -5,6 +5,7 @@ import * as productsController from './products.controller'
 import * as customersController from './customers.controller'
 import * as activityLogController from './activity-log.controller'
 import * as searchController from './search.controller'
+import * as searchAnalyticsController from './search-analytics.controller'
 import * as ordersController from '@/modules/orders/orders.controller'
 
 const router: Router = Router()
@@ -12,6 +13,7 @@ const router: Router = Router()
 router.use(requireAdmin)
 
 router.get('/analytics/overview', analyticsController.overview)
+router.get('/analytics/search', searchAnalyticsController.searchAnalytics)
 router.get('/products', productsController.list)
 router.get('/products/export', productsController.exportProducts)
 router.post('/products/import', productsController.importProducts)

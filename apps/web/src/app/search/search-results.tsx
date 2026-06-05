@@ -1,8 +1,9 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import { Search, SlidersHorizontal, X } from 'lucide-react'
+import { api } from '@/lib/api-client'
 import { useSearchResults } from '@/hooks/use-search-suggestions'
 import { SearchHitCard } from '@/components/search/search-hit-card'
 import { SearchFilters } from '@/components/search/search-filters'
@@ -104,6 +105,18 @@ export function SearchResults() {
   const hits = data?.data ?? []
   const meta = data?.meta
   const facets = data?.facets
+
+  // Record a search analytics event once per distinct query (not on filter/page
+  // changes). meta.query confirms the results match the current query term.
+  const lastTracked = useRef<string | null>(null)
+  useEffect(() => {
+    const q = filters.q.trim()
+    if (!q || !meta || meta.query !== q || lastTracked.current === q) return
+    lastTracked.current = q
+    api.post('/search/events', { query: q, resultCount: meta.total }).catch(() => {
+      // analytics is best-effort
+    })
+  }, [filters.q, meta])
 
   const hasActiveFilters =
     filters.categoryId ||

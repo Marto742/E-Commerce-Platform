@@ -21,3 +21,10 @@ export const searchQuerySchema = z.object({
 })
 
 export type SearchQueryInput = z.infer<typeof searchQuerySchema>
+
+export const searchEventSchema = z.object({
+  query: z.string().trim().min(1).max(200),
+  resultCount: z.coerce.number().int().min(0),
+})
+
+export type SearchEventInput = z.infer<typeof searchEventSchema>

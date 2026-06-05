@@ -57,6 +57,7 @@ temp/
 # Meilisearch
 meilisearch.exe
 meilisearch-data/
+data.ms/
 typesense-server-*.deb
 
 # Local assets

@@ -35,6 +35,28 @@ export const authenticate: RequestHandler = (req, _res, next) => {
 }
 
 /**
+ * Populates req.user when a valid Bearer token is present, but never rejects.
+ * Use for public endpoints that want to attribute the request when possible
+ * (e.g. analytics) while still serving anonymous callers.
+ */
+export const optionalAuthenticate: RequestHandler = (req, _res, next) => {
+  const header = req.headers.authorization
+  if (!header?.startsWith('Bearer ')) return next()
+
+  try {
+    const payload = jwt.verify(header.slice(7), env.JWT_ACCESS_SECRET) as AccessTokenPayload
+    req.user = {
+      id: payload.sub,
+      role: payload.role,
+      status: payload.status ?? 'ACTIVE',
+    }
+  } catch {
+    // Invalid/expired token on an optional route — treat as anonymous.
+  }
+  next()
+}
+
+/**
  * Like authenticate, but only requires admin role.
  */
 export const requireAdmin: RequestHandler = (req, _res, next) => {

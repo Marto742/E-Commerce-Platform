@@ -360,6 +360,23 @@ model ActivityLog {
   @@map("activity_logs")
 }
 
+// ─── Search Analytics ─────────────────────────────────────────────────────────
+
+model SearchEvent {
+  id          String   @id @default(cuid())
+  query       String // original query as typed
+  normalized  String // lowercased + trimmed, for grouping
+  resultCount Int      @map("result_count")
+  // Denormalised (no FK) so analytics survive user deletion
+  userId      String?  @map("user_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([normalized])
+  @@index([resultCount])
+  @@index([createdAt])
+  @@map("search_events")
+}
+
 // ─── Wishlist ─────────────────────────────────────────────────────────────────
 
 model Wishlist {

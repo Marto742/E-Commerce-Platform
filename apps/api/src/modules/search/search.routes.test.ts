@@ -3,10 +3,12 @@ import request from 'supertest'
 import { createApp } from '@/app'
 import type { searchProducts } from './search.service'
 import * as searchService from './search.service'
+import * as searchEvents from './search-events.service'
 
 type SearchResult = Awaited<ReturnType<typeof searchProducts>>
 
 vi.mock('./search.service')
+vi.mock('./search-events.service')
 
 vi.mock('@/middleware/rateLimiter', () => {
   const noop = (_req: unknown, _res: unknown, next: () => void) => next()
@@ -135,5 +137,24 @@ describe('GET /v1/search', () => {
   it('returns 422 when q is empty', async () => {
     const res = await request(app).get('/v1/search?q=')
     expect(res.status).toBe(422)
+  })
+})
+
+describe('POST /v1/search/events', () => {
+  it('records a search event and returns 204', async () => {
+    const res = await request(app)
+      .post('/v1/search/events')
+      .send({ query: 'widget', resultCount: 3 })
+
+    expect(res.status).toBe(204)
+    expect(searchEvents.recordSearchEvent).toHaveBeenCalledWith(
+      expect.objectContaining({ query: 'widget', resultCount: 3 })
+    )
+  })
+
+  it('returns 422 when query is missing', async () => {
+    const res = await request(app).post('/v1/search/events').send({ resultCount: 1 })
+    expect(res.status).toBe(422)
+    expect(searchEvents.recordSearchEvent).not.toHaveBeenCalled()
   })
 })

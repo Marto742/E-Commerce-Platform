@@ -104,5 +104,5 @@ export type {
 } from './schemas/common'
 
 // Search
-export { searchQuerySchema } from './schemas/search'
-export type { SearchQueryInput } from './schemas/search'
+export { searchQuerySchema, searchEventSchema } from './schemas/search'
+export type { SearchQueryInput, SearchEventInput } from './schemas/search'
