@@ -59,6 +59,7 @@ const mockResult: SearchResult = {
     categories: { 'cat-1': 1 },
     ratings: { '4': 1 },
   },
+  cached: false,
 }
 
 beforeEach(() => {
@@ -75,6 +76,7 @@ describe('GET /v1/search', () => {
     expect(res.body.data).toEqual([mockHit])
     expect(res.body.meta.query).toBe('widget')
     expect(res.body.meta.total).toBe(1)
+    expect(res.headers['x-cache']).toBe('MISS')
   })
 
   it('returns facet counts', async () => {

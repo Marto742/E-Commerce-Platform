@@ -1,6 +1,7 @@
 import { prisma } from './prisma'
 import { meili } from './meilisearch'
 import { PRODUCTS_INDEX, type ProductDocument } from './search-schema'
+import { invalidateSearchCache } from '@/modules/search/search.service'
 
 const BATCH_SIZE = 500
 
@@ -117,6 +118,7 @@ export async function reindexAllProducts(): Promise<{ indexed: number }> {
     cursor = products[products.length - 1].id
   }
 
+  invalidateSearchCache()
   return { indexed }
 }
 
@@ -129,6 +131,7 @@ export async function indexProduct(productId: string): Promise<void> {
 
   if (!product) {
     await meili.index(PRODUCTS_INDEX).deleteDocument(productId)
+    invalidateSearchCache()
     return
   }
 
@@ -136,9 +139,11 @@ export async function indexProduct(productId: string): Promise<void> {
   await meili
     .index(PRODUCTS_INDEX)
     .addDocuments([toDocument(product, ratings.get(productId) ?? NO_RATING)], { primaryKey: 'id' })
+  invalidateSearchCache()
 }
 
 /** Remove a product from the search index. */
 export async function deleteProductFromIndex(productId: string): Promise<void> {
   await meili.index(PRODUCTS_INDEX).deleteDocument(productId)
+  invalidateSearchCache()
 }

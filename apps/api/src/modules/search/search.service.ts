@@ -1,5 +1,6 @@
 import { meili } from '@/lib/meilisearch'
 import { PRODUCTS_INDEX, type ProductDocument } from '@/lib/search-schema'
+import { TTLCache } from '@/lib/cache'
 import { suggestCorrection } from './spellcheck.service'
 import type { SearchQueryInput } from '@repo/validation'
 
@@ -17,7 +18,7 @@ const SUGGESTION_MAX_RESULTS = 5
 const HL_PRE = '[[hl]]'
 const HL_POST = '[[/hl]]'
 
-export async function searchProducts(query: SearchQueryInput) {
+async function computeSearch(query: SearchQueryInput) {
   const {
     q,
     page,
@@ -110,4 +111,52 @@ export async function searchProducts(query: SearchQueryInput) {
       ratings: distribution['ratingBucket'] ?? {},
     },
   }
+}
+
+// ─── Cache layer ──────────────────────────────────────────────────────────────
+//
+// Identical queries are common (popular terms, pagination, autocomplete repeats)
+// and Meilisearch results only change on re-index, so a short-lived cache cuts
+// most of the search latency. Entries are invalidated immediately on any index
+// write and expire after the TTL as a backstop.
+
+type SearchResult = Awaited<ReturnType<typeof computeSearch>>
+
+const SEARCH_CACHE_TTL_MS = 60_000
+
+const searchCache = new TTLCache<SearchResult>({ ttlMs: SEARCH_CACHE_TTL_MS, maxEntries: 500 })
+
+/** Stable key over every parameter that affects the result set. */
+function buildCacheKey(q: SearchQueryInput): string {
+  return JSON.stringify([
+    q.q.trim().toLowerCase(),
+    q.page,
+    q.limit,
+    q.categoryId ?? '',
+    q.minPrice ?? '',
+    q.maxPrice ?? '',
+    q.minRating ?? '',
+    q.inStock ?? '',
+    q.isFeatured ?? '',
+    q.sortBy ?? '',
+    q.sortOrder,
+  ])
+}
+
+/** Drop all cached search results. Called whenever the index changes. */
+export function invalidateSearchCache(): void {
+  searchCache.clear()
+}
+
+export async function searchProducts(
+  query: SearchQueryInput
+): Promise<SearchResult & { cached: boolean }> {
+  const key = buildCacheKey(query)
+
+  const cached = searchCache.get(key)
+  if (cached) return { ...cached, cached: true }
+
+  const result = await computeSearch(query)
+  searchCache.set(key, result)
+  return { ...result, cached: false }
 }
