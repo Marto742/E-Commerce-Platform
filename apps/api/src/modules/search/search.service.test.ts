@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { SearchQueryInput } from '@repo/validation'
+import { AppError } from '@/utils/AppError'
 
 const searchMock = vi.fn()
 
@@ -70,5 +71,24 @@ describe('searchProducts caching', () => {
     invalidateSearchCache()
     await searchProducts(baseQuery)
     expect(searchMock).toHaveBeenCalledTimes(2)
+  })
+})
+
+describe('searchProducts robustness', () => {
+  it('escapes quotes in the category filter (no filter injection)', async () => {
+    await searchProducts({ ...baseQuery, q: 'escape-test', categoryId: 'x"y' })
+    const [, options] = searchMock.mock.calls[0]
+    expect(options.filter).toContain('categoryId = "x\\"y"')
+  })
+
+  it('degrades to a clean 503 when Meilisearch fails (no raw error leak)', async () => {
+    searchMock.mockReset()
+    searchMock.mockRejectedValue(new Error('connect ECONNREFUSED 127.0.0.1:7700'))
+
+    const error = await searchProducts({ ...baseQuery, q: 'boom' }).catch((e: unknown) => e)
+
+    expect(error).toBeInstanceOf(AppError)
+    expect(error).toMatchObject({ statusCode: 503, code: 'SEARCH_UNAVAILABLE' })
+    expect((error as AppError).message).not.toContain('ECONNREFUSED')
   })
 })

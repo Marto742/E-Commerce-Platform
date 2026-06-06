@@ -1,5 +1,6 @@
 import { prisma } from './prisma'
 import { meili } from './meilisearch'
+import { logger } from './logger'
 import { PRODUCTS_INDEX, type ProductDocument } from './search-schema'
 import { invalidateSearchCache } from '@/modules/search/search.service'
 
@@ -140,6 +141,37 @@ export async function indexProduct(productId: string): Promise<void> {
     .index(PRODUCTS_INDEX)
     .addDocuments([toDocument(product, ratings.get(productId) ?? NO_RATING)], { primaryKey: 'id' })
   invalidateSearchCache()
+}
+
+/**
+ * Upsert many products into the index in batches. Used after bulk operations
+ * (CSV import, bulk stock updates) so the index never drifts from the database.
+ * Resilient by design — logs and swallows failures so callers can fire-and-forget.
+ */
+export async function indexProducts(productIds: string[]): Promise<void> {
+  const ids = [...new Set(productIds)]
+  if (ids.length === 0) return
+
+  try {
+    const index = meili.index(PRODUCTS_INDEX)
+    for (let i = 0; i < ids.length; i += BATCH_SIZE) {
+      const batchIds = ids.slice(i, i + BATCH_SIZE)
+      const products = await prisma.product.findMany({
+        where: { id: { in: batchIds } },
+        include: INCLUDE,
+      })
+      if (!products.length) continue
+      const ratings = await ratingsByProduct(products.map((p) => p.id))
+      const docs = products.map((p) => toDocument(p, ratings.get(p.id) ?? NO_RATING))
+      await index.addDocuments(docs, { primaryKey: 'id' })
+    }
+    invalidateSearchCache()
+  } catch (err) {
+    logger.error('Bulk re-index failed', {
+      count: ids.length,
+      error: err instanceof Error ? err.message : String(err),
+    })
+  }
 }
 
 /** Remove a product from the search index. */

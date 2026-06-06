@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import { AppError } from '@/utils/AppError'
 import { buildPaginationMeta } from '@/utils/response'
+import { indexProducts } from '@/lib/search-indexer'
 
 export const DEFAULT_LOW_STOCK_THRESHOLD = 10
 
@@ -142,7 +143,7 @@ export async function bulkUpdateStock(updates: BulkStockUpdate[]) {
 
   const variants = await prisma.productVariant.findMany({
     where: { id: { in: variantIds } },
-    select: { id: true, sku: true, stock: true },
+    select: { id: true, sku: true, stock: true, productId: true },
   })
 
   // Validate all variant IDs exist
@@ -182,6 +183,9 @@ export async function bulkUpdateStock(updates: BulkStockUpdate[]) {
       })
     })
   )
+
+  // Stock affects the `inStock` flag in the search index — keep it in sync.
+  void indexProducts(variants.map((v) => v.productId))
 
   return results
 }

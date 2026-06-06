@@ -1,6 +1,8 @@
 import { meili } from '@/lib/meilisearch'
 import { PRODUCTS_INDEX, type ProductDocument } from '@/lib/search-schema'
 import { TTLCache } from '@/lib/cache'
+import { AppError } from '@/utils/AppError'
+import { logger } from '@/lib/logger'
 import { suggestCorrection } from './spellcheck.service'
 import type { SearchQueryInput } from '@repo/validation'
 
@@ -18,6 +20,12 @@ const SUGGESTION_MAX_RESULTS = 5
 const HL_PRE = '[[hl]]'
 const HL_POST = '[[/hl]]'
 
+// Escape user-supplied values interpolated into a Meilisearch filter string so
+// special characters (quotes, backslashes) can't break out and alter the filter.
+function escapeFilterValue(value: string): string {
+  return value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')
+}
+
 async function computeSearch(query: SearchQueryInput) {
   const {
     q,
@@ -34,7 +42,7 @@ async function computeSearch(query: SearchQueryInput) {
   } = query
 
   const filters: string[] = ['isActive = true']
-  if (categoryId) filters.push(`categoryId = "${categoryId}"`)
+  if (categoryId) filters.push(`categoryId = "${escapeFilterValue(categoryId)}"`)
   if (inStock !== undefined) filters.push(`inStock = ${inStock}`)
   if (isFeatured !== undefined) filters.push(`isFeatured = ${isFeatured}`)
   if (minPrice !== undefined) filters.push(`minPrice >= ${minPrice}`)
@@ -44,35 +52,48 @@ async function computeSearch(query: SearchQueryInput) {
 
   const sort = sortBy ? [`${sortBy}:${sortOrder}`] : undefined
 
-  const result = await meili.index<ProductDocument>(PRODUCTS_INDEX).search(q, {
-    offset: (page - 1) * limit,
-    limit,
-    filter: filters.join(' AND '),
-    facets: FACET_ATTRIBUTES,
-    ...(sort && { sort }),
-    attributesToRetrieve: [
-      'id',
-      'name',
-      'slug',
-      'description',
-      'categoryId',
-      'categoryName',
-      'basePrice',
-      'comparePrice',
-      'imageUrl',
-      'inStock',
-      'isFeatured',
-      'minPrice',
-      'maxPrice',
-      'rating',
-      'reviewCount',
-    ],
-    attributesToHighlight: ['name', 'description', 'categoryName'],
-    attributesToCrop: ['description'],
-    cropLength: 25,
-    highlightPreTag: HL_PRE,
-    highlightPostTag: HL_POST,
-  })
+  let result
+  try {
+    result = await meili.index<ProductDocument>(PRODUCTS_INDEX).search(q, {
+      offset: (page - 1) * limit,
+      limit,
+      filter: filters.join(' AND '),
+      facets: FACET_ATTRIBUTES,
+      ...(sort && { sort }),
+      attributesToRetrieve: [
+        'id',
+        'name',
+        'slug',
+        'description',
+        'categoryId',
+        'categoryName',
+        'basePrice',
+        'comparePrice',
+        'imageUrl',
+        'inStock',
+        'isFeatured',
+        'minPrice',
+        'maxPrice',
+        'rating',
+        'reviewCount',
+      ],
+      attributesToHighlight: ['name', 'description', 'categoryName'],
+      attributesToCrop: ['description'],
+      cropLength: 25,
+      highlightPreTag: HL_PRE,
+      highlightPostTag: HL_POST,
+    })
+  } catch (err) {
+    // Never surface raw Meilisearch errors to clients; degrade to a clean 503.
+    logger.error('Meilisearch query failed', {
+      error: err instanceof Error ? err.message : String(err),
+    })
+    throw new AppError(
+      503,
+      'SEARCH_UNAVAILABLE',
+      'Search is temporarily unavailable. Please try again shortly.'
+    )
+  }
 
   const distribution = result.facetDistribution ?? {}
 

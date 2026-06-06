@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { buildPaginationMeta } from '@/utils/response'
+import { indexProducts } from '@/lib/search-indexer'
 import { paginationSchema } from '@repo/validation'
 
 // ─── Import ───────────────────────────────────────────────────────────────────
@@ -98,6 +99,7 @@ export async function importProducts(input: ImportProductsInput): Promise<Import
 
   let imported = 0
   let skipped = 0
+  const createdIds: string[] = []
 
   for (const [slug, { rowIndex, data, variants }] of productMap) {
     const categoryId = categoryMap.get(data.categorySlug)
@@ -128,7 +130,7 @@ export async function importProducts(input: ImportProductsInput): Promise<Import
     }
 
     try {
-      await prisma.product.create({
+      const created = await prisma.product.create({
         data: {
           name: data.name,
           slug,
@@ -150,7 +152,9 @@ export async function importProducts(input: ImportProductsInput): Promise<Import
             })),
           },
         },
+        select: { id: true },
       })
+      createdIds.push(created.id)
       imported++
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Unknown error'
@@ -158,6 +162,9 @@ export async function importProducts(input: ImportProductsInput): Promise<Import
       skipped++
     }
   }
+
+  // Keep the search index in sync after the bulk insert.
+  void indexProducts(createdIds)
 
   return { imported, skipped, errors }
 }

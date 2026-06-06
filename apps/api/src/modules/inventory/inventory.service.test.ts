@@ -9,6 +9,10 @@ import {
   DEFAULT_LOW_STOCK_THRESHOLD,
 } from './inventory.service'
 
+vi.mock('@/lib/search-indexer', () => ({
+  indexProducts: vi.fn().mockResolvedValue(undefined),
+}))
+
 vi.mock('@/lib/prisma', () => ({
   prisma: {
     productVariant: {
