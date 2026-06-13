@@ -1,6 +1,7 @@
 import express, { type Application } from 'express'
 import helmet from 'helmet'
 import cors from 'cors'
+import * as Sentry from '@sentry/node'
 import { env } from '@/config/env'
 import router from '@/routes'
 import { notFound } from '@/middleware/notFound'
@@ -95,6 +96,11 @@ export function createApp(): Application {
 
   // ── 404 + global error handler (must be last) ───────────
   app.use(notFound)
+  // Sentry captures unhandled 5xx errors before our handler formats the response.
+  // No-op unless SENTRY_DSN is set (see instrument.ts).
+  if (env.SENTRY_DSN) {
+    Sentry.setupExpressErrorHandler(app)
+  }
   app.use(errorHandler)
 
   return app

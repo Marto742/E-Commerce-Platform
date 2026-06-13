@@ -206,3 +206,15 @@ GitHub Actions runs on every push and pull request to `main`:
 4. Build all services
 
 See [.github/workflows/ci.yml](.github/workflows/ci.yml).
+
+## Deployment
+
+Production runs on Vercel (web + admin), Railway (API), Neon (Postgres), Upstash (Redis),
+Meilisearch Cloud, and Cloudflare (R2 + CDN). The repo ships the deploy configs
+([railway.json](railway.json), per-app `vercel.json`), Sentry integration, Redis-backed
+rate limiting, a readiness endpoint (`/v1/health/ready`), and automated offsite DB backups
+([.github/workflows/backup.yml](.github/workflows/backup.yml)).
+
+- **Step-by-step provisioning:** [docs/deployment.md](docs/deployment.md)
+- **Provider choices & architecture:** [docs/infrastructure-decisions.md](docs/infrastructure-decisions.md)
+- **Schema changes & recovery:** [docs/migration-strategy.md](docs/migration-strategy.md)

@@ -8,6 +8,7 @@ import { CartDrawerProvider } from '@/components/cart/cart-drawer-context'
 import { CartDrawer } from '@/components/cart/cart-drawer'
 import { SessionProvider } from '@/components/providers/session-provider'
 import { SessionGuard } from '@/components/providers/session-guard'
+import { Analytics } from '@vercel/analytics/next'
 import { Devtools } from './devtools'
 import './globals.css'
 
@@ -86,6 +87,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <SessionGuard />
           </QueryProvider>
         </SessionProvider>
+        <Analytics />
       </body>
     </html>
   )

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import { QueryProvider } from '@repo/ui'
+import { Analytics } from '@vercel/analytics/next'
 import { Devtools } from './devtools'
 import './globals.css'
 
@@ -26,6 +27,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           {children}
           {process.env.NODE_ENV !== 'production' && <Devtools />}
         </QueryProvider>
+        <Analytics />
       </body>
     </html>
   )
