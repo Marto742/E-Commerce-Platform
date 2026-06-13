@@ -39,14 +39,12 @@ export interface Order {
 }
 
 interface OrdersResponse {
-  data: {
-    orders: Order[]
-    meta: {
-      total: number
-      page: number
-      limit: number
-      totalPages: number
-    }
+  data: Order[]
+  meta: {
+    total: number
+    page: number
+    limit: number
+    totalPages: number
   }
 }
 
@@ -72,7 +70,8 @@ export default async function OrdersPage({ searchParams }: PageProps) {
     ? (status as OrderStatus)
     : undefined
 
-  let ordersData: OrdersResponse['data'] | null = null
+  let orders: Order[] = []
+  let meta: OrdersResponse['meta'] | null = null
   let fetchError: string | null = null
 
   try {
@@ -85,7 +84,8 @@ export default async function OrdersPage({ searchParams }: PageProps) {
         ...(activeStatus ? { status: activeStatus } : {}),
       },
     })
-    ordersData = res.data
+    orders = res.data
+    meta = res.meta
   } catch {
     fetchError = 'Could not load your orders. Please try again later.'
   }
@@ -95,9 +95,7 @@ export default async function OrdersPage({ searchParams }: PageProps) {
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">My Orders</h1>
         <p className="mt-1 text-sm text-gray-500">
-          {ordersData
-            ? `${ordersData.meta.total} order${ordersData.meta.total !== 1 ? 's' : ''}`
-            : ''}
+          {meta ? `${meta.total} order${meta.total !== 1 ? 's' : ''}` : ''}
         </p>
       </div>
 
@@ -118,8 +116,8 @@ export default async function OrdersPage({ searchParams }: PageProps) {
           }
         >
           <OrderList
-            orders={ordersData?.orders ?? []}
-            meta={ordersData?.meta ?? { total: 0, page: 1, limit: 10, totalPages: 0 }}
+            orders={orders}
+            meta={meta ?? { total: 0, page: 1, limit: 10, totalPages: 0 }}
           />
         </Suspense>
       )}
