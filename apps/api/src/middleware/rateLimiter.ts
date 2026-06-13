@@ -33,6 +33,7 @@ function limitedResponse(message: string): Options['message'] {
 class HybridStore implements Store {
   private memory = new MemoryStore()
   private redisStore?: RedisStore
+  private options?: Options
   private readonly keyPrefix: string
 
   constructor(name: string) {
@@ -40,19 +41,27 @@ class HybridStore implements Store {
   }
 
   init(options: Options): void {
+    this.options = options
     this.memory.init(options)
-    if (redis) {
-      const client = redis
-      this.redisStore = new RedisStore({
-        prefix: this.keyPrefix,
-        sendCommand: (...args: string[]) => client.sendCommand(args),
-      })
-      this.redisStore.init(options)
-    }
+    // RedisStore is created lazily in active() — only once Redis is actually
+    // connected. Creating it here (at module load, before connectRedis() runs)
+    // issues a command to a not-yet-open client, which rejects with
+    // ClientClosedError and crashes the process via the unhandledRejection guard.
   }
 
   private active(): Store {
-    return this.redisStore && isRedisReady() ? this.redisStore : this.memory
+    if (redis && isRedisReady()) {
+      if (!this.redisStore) {
+        const client = redis
+        this.redisStore = new RedisStore({
+          prefix: this.keyPrefix,
+          sendCommand: (...args: string[]) => client.sendCommand(args),
+        })
+        if (this.options) this.redisStore.init(this.options)
+      }
+      return this.redisStore
+    }
+    return this.memory
   }
 
   increment(key: string): Promise<IncrementResponse> | IncrementResponse {
