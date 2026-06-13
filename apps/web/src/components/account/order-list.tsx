@@ -118,7 +118,7 @@ function OrderCard({ order }: { order: Order }) {
 
       <div className="mt-4 flex items-center justify-between border-t pt-3 text-sm">
         <span className="text-gray-500">{date}</span>
-        <span className="font-semibold text-gray-900">${order.total.toFixed(2)}</span>
+        <span className="font-semibold text-gray-900">${Number(order.total).toFixed(2)}</span>
       </div>
 
       {order.trackingNumber && (
