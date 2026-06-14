@@ -38,6 +38,7 @@ The checkout payment spec also needs `STRIPE_SECRET_KEY` (API) and
 
 ## CI
 
-`.github/workflows/e2e.yml` runs the suite on PRs to `main`: spins up Postgres + Redis,
-migrates + seeds, installs Playwright browsers, boots the stack, and runs all projects.
-The HTML report is uploaded as an artifact.
+`.github/workflows/e2e.yml` runs the suite **on demand** (`workflow_dispatch`): spins up
+Postgres + Redis, migrates + seeds, installs Playwright browsers, boots the stack, and runs
+all projects. The HTML report is uploaded as an artifact. Promote the trigger to
+`pull_request: [main]` once the suite is validated against a live stack.
