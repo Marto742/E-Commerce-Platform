@@ -1,0 +1,22 @@
+# Stress test — stair-step arrival rate until latency/errors break down (task 10.14).
+#
+# Run: npx artillery run load/stress.yml --target <url> --output stress.json
+# Then read the per-phase p95/p99 + error rate to locate the breaking point.
+config:
+  target: http://localhost:4000
+  phases:
+    - { name: '50/s', duration: 60, arrivalRate: 50 }
+    - { name: '100/s', duration: 60, arrivalRate: 100 }
+    - { name: '200/s', duration: 60, arrivalRate: 200 }
+    - { name: '400/s', duration: 60, arrivalRate: 400 }
+    - { name: '800/s', duration: 60, arrivalRate: 800 }
+  http:
+    timeout: 10
+
+scenarios:
+  - name: read-heavy
+    flow:
+      - get:
+          url: '/v1/products?limit=20'
+      - get:
+          url: '/v1/search?q=shoe'
