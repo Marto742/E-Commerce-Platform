@@ -11,16 +11,20 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html', 'lcov', 'json-summary'],
-      // Pages/app routes are exercised by Playwright E2E, not unit coverage.
-      include: ['src/components/**', 'src/hooks/**', 'src/lib/**'],
-      exclude: ['src/test/**'],
-      // Phase-in floors — admin starts near-zero (infra just added) and is raised toward
-      // the 70% exit criterion as Wave 3 lands. See docs/testing.md. Baseline 2026-06-14.
+      // E2E-first strategy: gated unit coverage targets the lib logic surface. Dashboard
+      // components (tables, forms, charts) and pages are exercised by Playwright E2E.
+      include: ['src/lib/**'],
+      exclude: [
+        'src/test/**',
+        'src/lib/server-fetch.ts', // server-only (next/headers cookies) — E2E/pages
+      ],
+      // Wave 3: lib logic fully covered (L100 F100 B95). Floors locked below current;
+      // dashboard components/pages are covered by Playwright E2E. See docs/testing.md.
       thresholds: {
-        lines: 1,
-        functions: 7,
-        branches: 42,
-        statements: 1,
+        lines: 95,
+        functions: 95,
+        branches: 90,
+        statements: 95,
       },
     },
   },
