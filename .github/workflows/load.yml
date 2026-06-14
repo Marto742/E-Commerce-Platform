@@ -1,0 +1,45 @@
+name: Load test
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: API base URL to load test
+        required: true
+        default: https://repoapi-production-6115.up.railway.app
+      scenario:
+        description: Scenario file
+        required: true
+        default: load/browse.yml
+  schedule:
+    # Weekly, Monday 04:00 UTC — gentle cadence for free-tier hosting.
+    - cron: '0 4 * * 1'
+
+jobs:
+  load:
+    name: Artillery
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Run Artillery
+        env:
+          TARGET: ${{ github.event.inputs.target || 'https://repoapi-production-6115.up.railway.app' }}
+          SCENARIO: ${{ github.event.inputs.scenario || 'load/browse.yml' }}
+        run: |
+          npx --yes artillery@latest run "$SCENARIO" --target "$TARGET" --output report.json
+          npx --yes artillery@latest report report.json
+
+      - name: Upload report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: load-report
+          path: |
+            report.json
+            report.json.html
+          if-no-files-found: ignore

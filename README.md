@@ -107,6 +107,8 @@ pnpm lint          # Lint all packages
 pnpm lint:fix      # Lint and auto-fix
 pnpm type-check    # TypeScript check across all packages
 pnpm test          # Run all tests
+pnpm test:coverage # Run all tests with coverage gates enforced
+pnpm test:e2e      # Run Playwright E2E (requires the stack running)
 pnpm format        # Format all files with Prettier
 pnpm format:check  # Check formatting without writing
 pnpm clean         # Remove all build outputs
@@ -131,6 +133,19 @@ pnpm --filter api db:generate  # Regenerate Prisma client
 pnpm --filter api db:studio    # Open Prisma Studio UI
 pnpm --filter @repo/database db:seed  # Seed the database
 ```
+
+## Testing
+
+Comprehensive testing across unit, integration, E2E, accessibility, load, and security.
+See **[docs/testing.md](docs/testing.md)** for the full guide.
+
+- **Unit + integration** (Vitest + Supertest) with enforced coverage gates —
+  **80%+ backend**, **70%+ frontend**.
+- **E2E + a11y + visual + cross-browser** (Playwright + axe) — see [e2e/](e2e/).
+- **Load / stress** (Artillery) — see [load/](load/).
+- **Security** — regression tests + [OWASP self-assessment](docs/security-audit.md) +
+  [pentest checklist](docs/pentest-checklist.md).
+- Process: [bug triage](docs/bug-triage.md) · [UAT plan](docs/uat-plan.md).
 
 ## Environment Variables
 
