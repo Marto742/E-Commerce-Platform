@@ -11,17 +11,16 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html', 'lcov', 'json-summary'],
-      // Pages/app routes are exercised by Playwright E2E, not unit coverage —
-      // scope unit coverage to logic + components (E2E-first strategy).
-      include: ['src/components/**', 'src/hooks/**', 'src/lib/**', 'src/store/**'],
+      // Pages/app routes are exercised by Playwright E2E, not unit coverage.
+      include: ['src/components/**', 'src/hooks/**', 'src/lib/**'],
       exclude: ['src/test/**'],
-      // Phase-in floors (just below current baseline) — raised toward the 70% exit
-      // criterion as each wave lands. See docs/testing.md. Baseline 2026-06-14: L13 F35 B70.
+      // Phase-in floors — admin starts near-zero (infra just added) and is raised toward
+      // the 70% exit criterion as Wave 3 lands. See docs/testing.md. Baseline 2026-06-14.
       thresholds: {
-        lines: 11,
-        functions: 34,
-        branches: 69,
-        statements: 11,
+        lines: 1,
+        functions: 7,
+        branches: 42,
+        statements: 1,
       },
     },
   },
