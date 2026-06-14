@@ -28,13 +28,13 @@ export default defineConfig({
         'src/**/*.d.ts',
         'src/types/**',
       ],
-      // Phase-in floors (just below current baseline) — raised toward the 80% exit
-      // criterion as each wave lands. See docs/testing.md. Baseline 2026-06-14: L65 F58 B81.
+      // Wave 2 met the 80% backend exit criterion (L80.6 F74.8 B82.2). Floors locked
+      // just below current to guard against regressions. See docs/testing.md.
       thresholds: {
-        lines: 64,
-        functions: 56,
-        branches: 79,
-        statements: 64,
+        lines: 80,
+        functions: 74,
+        branches: 81,
+        statements: 80,
       },
     },
   },
