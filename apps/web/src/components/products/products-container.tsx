@@ -41,13 +41,23 @@ function buildSearchParams(filters: ProductFiltersState): URLSearchParams {
   return params
 }
 
-export function ProductsContainer() {
+export function ProductsContainer({
+  categoryId,
+  categoryName,
+}: {
+  categoryId?: string
+  categoryName?: string
+} = {}) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
-  const [filters, setFilters] = useState<ProductFiltersState>(() =>
-    filtersFromSearchParams(searchParams)
-  )
+  const [filters, setFilters] = useState<ProductFiltersState>(() => {
+    const initialFilters = filtersFromSearchParams(searchParams)
+    if (categoryId && !initialFilters.categoryId) {
+      initialFilters.categoryId = categoryId
+    }
+    return initialFilters
+  })
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
   const [viewMode, setViewMode] = useState<ViewMode>('grid')
 
@@ -100,9 +110,11 @@ export function ProductsContainer() {
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       {/* Page header */}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-          All Products
-        </h1>
+        {!categoryName && (
+          <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+            All Products
+          </h1>
+        )}
         {data && (
           <p className="mt-1 text-sm text-muted-foreground">
             {data.meta.total.toLocaleString()} product{data.meta.total !== 1 ? 's' : ''}
