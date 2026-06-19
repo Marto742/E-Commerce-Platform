@@ -44,9 +44,11 @@ function buildSearchParams(filters: ProductFiltersState): URLSearchParams {
 export function ProductsContainer({
   categoryId,
   categoryName,
+  dealOnly,
 }: {
   categoryId?: string
   categoryName?: string
+  dealOnly?: boolean
 } = {}) {
   const router = useRouter()
   const pathname = usePathname()
@@ -97,6 +99,15 @@ export function ProductsContainer({
 
   const { data, isLoading, isError } = useProducts(apiParams)
 
+  // Filter for deals only (products with comparePrice)
+  const filteredData =
+    dealOnly && data
+      ? {
+          ...data,
+          data: data.data.filter((product) => product.comparePrice),
+        }
+      : data
+
   const hasActiveFilters =
     filters.search ||
     filters.categoryId ||
@@ -115,9 +126,10 @@ export function ProductsContainer({
             All Products
           </h1>
         )}
-        {data && (
+        {filteredData && (
           <p className="mt-1 text-sm text-muted-foreground">
-            {data.meta.total.toLocaleString()} product{data.meta.total !== 1 ? 's' : ''}
+            {filteredData.data.length.toLocaleString()} product
+            {filteredData.data.length !== 1 ? 's' : ''}
           </p>
         )}
       </div>
@@ -191,7 +203,7 @@ export function ProductsContainer({
         {/* Grid */}
         <div className="min-w-0 flex-1">
           <ProductGrid
-            data={data}
+            data={filteredData}
             isLoading={isLoading}
             isError={isError}
             limit={filters.limit}
