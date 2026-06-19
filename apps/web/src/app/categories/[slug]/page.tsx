@@ -80,14 +80,8 @@ function ProductsLoadingFallback() {
   )
 }
 
-interface PageProps {
-  params: Promise<{ slug: string }>
-  searchParams: Promise<Record<string, string | string[] | undefined>>
-}
-
-export default async function CategoryPage({ params, searchParams }: PageProps) {
+export default async function CategoryPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
-  const sp = await searchParams
   const category = await getCategoryBySlug(slug)
 
   if (!category) {
