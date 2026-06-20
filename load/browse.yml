@@ -1,0 +1,48 @@
+# Sustained read-heavy load test (tasks 10.12 / 10.13).
+#
+# Run:   npx artillery run load/browse.yml
+# Prod:  npx artillery run load/browse.yml --target https://repoapi-production-6115.up.railway.app
+# Report: npx artillery run load/browse.yml --output report.json && npx artillery report report.json
+#
+# Default target is localhost so this never accidentally loads production.
+config:
+  target: http://localhost:4000
+  phases:
+    - name: warm-up
+      duration: 30
+      arrivalRate: 5
+    - name: ramp-up
+      duration: 120
+      arrivalRate: 10
+      rampTo: 100
+    - name: sustained
+      duration: 180
+      arrivalRate: 100 # ~100 new sessions/s; with multi-request flows this drives ~1k concurrent
+  http:
+    timeout: 10
+  # Pass/fail budget for CI / release gates.
+  ensure:
+    thresholds:
+      - http.response_time.p95: 500
+      - http.response_time.p99: 1000
+    maxErrorRate: 1 # percent
+
+scenarios:
+  - name: browse-and-search
+    weight: 8
+    flow:
+      - get:
+          url: '/v1/products?page=1&limit=20'
+      - think: 1
+      - get:
+          url: '/v1/categories'
+      - get:
+          url: '/v1/search?q=shirt'
+      - think: 1
+      - get:
+          url: '/v1/products?page=2&limit=20&sort=price'
+  - name: health
+    weight: 2
+    flow:
+      - get:
+          url: '/v1/health'

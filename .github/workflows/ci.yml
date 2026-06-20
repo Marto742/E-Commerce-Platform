@@ -80,8 +80,16 @@ jobs:
       - name: Type check
         run: pnpm type-check
 
-      - name: Test
-        run: pnpm test
+      - name: Test (with coverage gate)
+        run: pnpm test:coverage
+
+      - name: Upload coverage reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: apps/*/coverage/
+          if-no-files-found: ignore
 
       - name: Build
         run: pnpm build

@@ -1,0 +1,62 @@
+name: Bug report
+description: Report a defect in the e-commerce platform
+title: '[Bug]: '
+labels: ['bug', 'needs-triage']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. Severity is assigned during triage per
+        [docs/bug-triage.md](../blob/main/docs/bug-triage.md).
+  - type: dropdown
+    id: environment
+    attributes:
+      label: Environment
+      options: [Production, Staging, Local]
+    validations:
+      required: true
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Suspected severity
+      description: P0 site down / payment / data loss / security · P1 major feature · P2 minor · P3 cosmetic
+      options: [P0, P1, P2, P3, Not sure]
+    validations:
+      required: true
+  - type: input
+    id: browser
+    attributes:
+      label: Browser / device
+      placeholder: Chrome 120 · iPhone 15 Safari · n/a (API)
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Go to...
+        2. Click on...
+        3. See error
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected result
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual result
+    validations:
+      required: true
+  - type: textarea
+    id: console
+    attributes:
+      label: Console / server errors
+      description: Any JS console errors, API error codes, or Sentry links.
+      render: shell
+  - type: textarea
+    id: context
+    attributes:
+      label: Screenshots / related issues

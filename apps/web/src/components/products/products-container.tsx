@@ -41,13 +41,25 @@ function buildSearchParams(filters: ProductFiltersState): URLSearchParams {
   return params
 }
 
-export function ProductsContainer() {
+export function ProductsContainer({
+  categoryId,
+  categoryName,
+  dealOnly,
+}: {
+  categoryId?: string
+  categoryName?: string
+  dealOnly?: boolean
+} = {}) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
-  const [filters, setFilters] = useState<ProductFiltersState>(() =>
-    filtersFromSearchParams(searchParams)
-  )
+  const [filters, setFilters] = useState<ProductFiltersState>(() => {
+    const initialFilters = filtersFromSearchParams(searchParams)
+    if (categoryId && !initialFilters.categoryId) {
+      initialFilters.categoryId = categoryId
+    }
+    return initialFilters
+  })
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false)
   const [viewMode, setViewMode] = useState<ViewMode>('grid')
 
@@ -87,6 +99,15 @@ export function ProductsContainer() {
 
   const { data, isLoading, isError } = useProducts(apiParams)
 
+  // Filter for deals only (products with comparePrice)
+  const filteredData =
+    dealOnly && data
+      ? {
+          ...data,
+          data: data.data.filter((product) => product.comparePrice),
+        }
+      : data
+
   const hasActiveFilters =
     filters.search ||
     filters.categoryId ||
@@ -100,12 +121,15 @@ export function ProductsContainer() {
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       {/* Page header */}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-          All Products
-        </h1>
-        {data && (
+        {!categoryName && (
+          <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+            All Products
+          </h1>
+        )}
+        {filteredData && (
           <p className="mt-1 text-sm text-muted-foreground">
-            {data.meta.total.toLocaleString()} product{data.meta.total !== 1 ? 's' : ''}
+            {filteredData.data.length.toLocaleString()} product
+            {filteredData.data.length !== 1 ? 's' : ''}
           </p>
         )}
       </div>
@@ -179,7 +203,7 @@ export function ProductsContainer() {
         {/* Grid */}
         <div className="min-w-0 flex-1">
           <ProductGrid
-            data={data}
+            data={filteredData}
             isLoading={isLoading}
             isError={isError}
             limit={filters.limit}
